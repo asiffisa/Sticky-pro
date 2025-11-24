@@ -2,7 +2,7 @@ const { widget } = figma;
 const { useSyncedState, usePropertyMenu, AutoLayout, Input, Text, SVG, Rectangle, Frame } = widget;
 
 // Types
-type BlockType = 'text' | 'todo';
+type BlockType = 'text' | 'todo' | 'code';
 type TextFormat = 'H1' | 'B1' | 'C1';
 type ListType = 'none' | 'bullet' | 'numbered';
 
@@ -71,6 +71,10 @@ const lightThemeIcon = `<svg width="20" height="20" viewBox="0 0 20 20" fill="no
 const darkThemeIcon = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M10 17.5C7.91667 17.5 6.14583 16.7708 4.6875 15.3125C3.22917 13.8542 2.5 12.0833 2.5 10C2.5 7.91667 3.22917 6.14583 4.6875 4.6875C6.14583 3.22917 7.91667 2.5 10 2.5C10.1944 2.5 10.3856 2.50694 10.5733 2.52083C10.7611 2.53472 10.945 2.55556 11.125 2.58333C10.5556 2.98611 10.1006 3.51056 9.76 4.15667C9.41944 4.80278 9.24944 5.50056 9.25 6.25C9.25 7.5 9.6875 8.5625 10.5625 9.4375C11.4375 10.3125 12.5 10.75 13.75 10.75C14.5139 10.75 15.2153 10.5797 15.8542 10.2392C16.4931 9.89861 17.0139 9.44389 17.4167 8.875C17.4444 9.05555 17.4653 9.23944 17.4792 9.42667C17.4931 9.61389 17.5 9.805 17.5 10C17.5 12.0833 16.7708 13.8542 15.3125 15.3125C13.8542 16.7708 12.0833 17.5 10 17.5ZM10 15.8333C11.2222 15.8333 12.3194 15.4964 13.2917 14.8225C14.2639 14.1486 14.9722 13.2703 15.4167 12.1875C15.1389 12.2569 14.8611 12.3125 14.5833 12.3542C14.3056 12.3958 14.0278 12.4167 13.75 12.4167C12.0417 12.4167 10.5867 11.8158 9.385 10.6142C8.18333 9.4125 7.58278 7.95778 7.58333 6.25C7.58333 5.97222 7.60417 5.69444 7.64583 5.41667C7.6875 5.13889 7.74306 4.86111 7.8125 4.58333C6.72917 5.02778 5.85056 5.73611 5.17667 6.70833C4.50278 7.68056 4.16611 8.77778 4.16667 10C4.16667 11.6111 4.73611 12.9861 5.875 14.125C7.01389 15.2639 8.38889 15.8333 10 15.8333Z" fill="white"/>
 </svg>` ;
+
+const codeIcon = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M1.87812 6.51925L4.10407 8.94362C4.20939 9.05833 4.26204 9.20431 4.26204 9.38158C4.26204 9.55884 4.20939 9.70482 4.10407 9.81953C3.99876 9.93423 3.86472 9.99158 3.70196 9.99158C3.53921 9.99158 3.40517 9.93423 3.29986 9.81953L0.657432 6.94156C0.599988 6.879 0.559203 6.81122 0.535076 6.73823C0.51095 6.66523 0.499269 6.58703 0.500035 6.50361C0.500801 6.42019 0.512864 6.34198 0.536225 6.26899C0.559586 6.196 0.600179 6.12822 0.658006 6.06566L3.30043 3.18769C3.41532 3.06256 3.55184 3 3.71001 3C3.86817 3 4.0045 3.06256 4.11901 3.18769C4.23351 3.31282 4.29096 3.46152 4.29134 3.63378C4.29172 3.80604 4.23428 3.95453 4.11901 4.07924L1.87812 6.51925ZM10.1213 6.48797L7.89538 4.0636C7.79006 3.94889 7.73741 3.80291 7.73741 3.62564C7.73741 3.44838 7.79006 3.30239 7.89538 3.18769C8.00069 3.07299 8.13473 3.01564 8.29749 3.01564C8.46024 3.01564 8.59428 3.07299 8.69959 3.18769L11.342 6.06566C11.3995 6.12822 11.4402 6.196 11.4644 6.26899C11.4885 6.34198 11.5004 6.42019 11.5 6.50361C11.4996 6.58703 11.4877 6.66523 11.4644 6.73823C11.441 6.81122 11.4002 6.879 11.342 6.94156L8.69959 9.81953C8.58471 9.94466 8.45067 10.0047 8.29749 9.99971C8.1443 9.99471 8.01027 9.92943 7.89538 9.80389C7.78049 9.67834 7.72305 9.52985 7.72305 9.35843C7.72305 9.187 7.78049 9.03831 7.89538 8.91234L10.1213 6.48797Z" fill="#7BA7AA"/>
+</svg>`;
 
 // Theme colors
 const themeColors = {
@@ -169,25 +173,36 @@ function StickyProWidget() {
         },
       ] : []),
       // Theme and Width toggle (for all blocks when focused)
-      ...(focusedBlock ? [
-        {
-          itemType: 'action' as const,
-          tooltip: theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-          propertyName: 'toggle-theme',
-          icon: theme === 'dark' ? lightThemeIcon : darkThemeIcon,
-        },
-        {
-          itemType: 'separator' as const,
-        },
-        {
-          itemType: 'action' as const,
-          tooltip: width === 360 ? 'Expand Width' : 'Shrink Width',
-          propertyName: 'toggle-width',
-          icon: width === 360 ? expandIcon : shrinkIcon,
-        },
-      ] : []),
+      // Theme and Width toggle (always visible)
+      {
+        itemType: 'action' as const,
+        tooltip: theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+        propertyName: 'toggle-theme',
+        icon: theme === 'dark' ? lightThemeIcon : darkThemeIcon,
+      },
+      {
+        itemType: 'separator' as const,
+      },
+      {
+        itemType: 'action' as const,
+        tooltip: width === 360 ? 'Expand Width' : 'Shrink Width',
+        propertyName: 'toggle-width',
+        icon: width === 360 ? expandIcon : shrinkIcon,
+      },
     ],
     ({ propertyName }) => {
+      // Handle width toggle
+      if (propertyName === 'toggle-width') {
+        toggleWidth();
+        return;
+      }
+
+      // Handle theme toggle
+      if (propertyName === 'toggle-theme') {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+        return;
+      }
+
       if (!focusedBlockId || !focusedBlock) return;
 
       // Handle format changes
@@ -208,16 +223,6 @@ function StickyProWidget() {
       if (propertyName === 'list-numbered') {
         const newListType = (focusedBlock.listType || 'none') === 'numbered' ? 'none' : 'numbered';
         updateBlockListType(focusedBlockId, newListType);
-      }
-
-      // Handle width toggle
-      if (propertyName === 'toggle-width') {
-        toggleWidth();
-      }
-
-      // Handle theme toggle
-      if (propertyName === 'toggle-theme') {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
       }
     }
   );
@@ -264,7 +269,7 @@ function StickyProWidget() {
   const addLineToBlock = (blockId: string, afterLineId?: string) => {
     setBlocks(
       blocks.map((b) => {
-        if (b.id === blockId && b.type === 'text') {
+        if (b.id === blockId && (b.type === 'text' || b.type === 'code')) {
           const lines = b.lines || [{ id: generateId(), text: b.content || '', format: b.format || 'B1' }];
           const newLine: TextLine = {
             id: generateId(),
@@ -293,7 +298,7 @@ function StickyProWidget() {
   const updateLineInBlock = (blockId: string, lineId: string, text: string) => {
     setBlocks(
       blocks.map((b) => {
-        if (b.id === blockId && b.type === 'text') {
+        if (b.id === blockId && (b.type === 'text' || b.type === 'code')) {
           const lines = b.lines || [];
           return {
             ...b,
@@ -309,7 +314,7 @@ function StickyProWidget() {
   const updateLineFormat = (blockId: string, lineId: string, format: TextFormat) => {
     setBlocks(
       blocks.map((b) => {
-        if (b.id !== blockId || b.type !== 'text') return b;
+        if (b.id !== blockId || (b.type !== 'text' && b.type !== 'code')) return b;
         return {
           ...b,
           lines: (b.lines || []).map(l => l.id === lineId ? { ...l, format } : l)
@@ -322,7 +327,7 @@ function StickyProWidget() {
   const deleteLineFromBlock = (blockId: string, lineId: string) => {
     setBlocks(
       blocks.map((b) => {
-        if (b.id !== blockId || b.type !== 'text') return b;
+        if (b.id !== blockId || (b.type !== 'text' && b.type !== 'code')) return b;
 
         const lines = (b.lines || []).filter(l => l.id !== lineId);
         // If no lines left, keep at least one empty line
@@ -541,7 +546,11 @@ function StickyProWidget() {
           y={{ type: 'bottom', offset: -56 }}
           x={{ type: 'center', offset: 0 }}
         >
-          <AddBlockMenu onAddText={() => addBlock('text')} onAddTodo={() => addBlock('todo')} />
+          <AddBlockMenu
+            onAddText={() => addBlock('text')}
+            onAddTodo={() => addBlock('todo')}
+            onAddCode={() => addBlock('code')}
+          />
         </AutoLayout>
       )}
     </AutoLayout>
@@ -620,7 +629,7 @@ function BlockComponent({
   onToggleTodo?: (todoId: string) => void;
   onInsertTodoAfter?: (todoId: string) => void;
 }) {
-  if (block.type === 'text') {
+  if (block.type === 'text' || block.type === 'code') {
     return (
       <TextBlock
         block={block}
@@ -695,9 +704,53 @@ function TextBlock({
   onLineClick?: (lineId: string) => void;
 }) {
   const colors = themeColors[theme];
-  // Use existing lines or create default
-  const lines = block.lines || [{ id: 'default-line', text: block.content || '', format: block.format || 'B1' }];
 
+  // Code blocks use single multi-line input
+  if (block.type === 'code') {
+    return (
+      <AutoLayout
+        direction="horizontal"
+        spacing={0}
+        width={width}
+        padding={{ top: isFirst ? 0 : 8, bottom: 8, left: 0, right: 0 }}
+        overflow="visible"
+      >
+        <AutoLayout
+          direction="vertical"
+          spacing={4}
+          width="fill-parent"
+          padding={{ left: 12, right: 12, top: 12, bottom: 12 }}
+          fill={colors.blockBg}
+          cornerRadius={10}
+          overflow="visible"
+          onClick={onFocus}
+        >
+          {/* Close button */}
+          {isFocused && <CloseButton onClick={onDelete} />}
+
+          <Input
+            inputBehavior="multiline"
+            placeholder="<Type code>"
+            value={block.content}
+            onTextEditEnd={(e) => onContentChange(e.characters)}
+            onClick={onFocus}
+            fontSize={14}
+            fontFamily="IBM Plex Mono"
+            fontWeight={400}
+            fill={colors.textPrimary}
+            width="fill-parent"
+            inputFrameProps={{
+              fill: '#00000000',
+              padding: 0,
+            }}
+          />
+        </AutoLayout>
+      </AutoLayout>
+    );
+  }
+
+  // Text blocks use existing line-based approach
+  const lines = block.lines || [{ id: generateId(), text: block.content || '', format: block.format || 'B1' }];
   return (
     <AutoLayout
       direction="horizontal"
@@ -757,33 +810,10 @@ function TextBlock({
                   width="fill-parent"
                   height="hug-contents"
                 >
-                  {!line.text && (
-                    <AutoLayout
-                      positioning="absolute"
-                      direction="horizontal"
-                      spacing={6}
-                      verticalAlignItems="center"
-                      width="fill-parent"
-                    >
-                      {index === 0 && (
-                        <SVG
-                          src={`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M11.2332 2.35209C11.4083 2.17699 11.6162 2.0381 11.845 1.94334C12.0737 1.84858 12.3189 1.7998 12.5666 1.7998C12.8142 1.7998 13.0594 1.84858 13.2881 1.94334C13.5169 2.0381 13.7248 2.17699 13.8999 2.35209C14.075 2.52719 14.2139 2.73505 14.3086 2.96383C14.4034 3.1926 14.4522 3.4378 14.4522 3.68542C14.4522 3.93305 14.4034 4.17824 14.3086 4.40702C14.2139 4.63579 14.075 4.84366 13.8999 5.01876L6.06657 12.8521L2.3999 13.8521L3.3999 10.1854L11.2332 2.35209Z" stroke="${colors.editIcon}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`}
-                        />
-                      )}
-                      <Text
-                        fontSize={14}
-                        fontFamily="Inter"
-                        fontWeight={fontWeight as 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900}
-                        fill={{ type: 'solid', color: colors.textPrimary, opacity: colors.placeholderOpacity }}
-                        width="fill-parent"
-                      >
-                        {index === 0 ? "Type" : "Add"}
-                      </Text>
-                    </AutoLayout>
-                  )}
+
                   <Input
+                    inputBehavior="multiline"
+                    placeholder={"Type"}
                     value={line.text}
                     onClick={() => {
                       onFocus();
@@ -791,7 +821,7 @@ function TextBlock({
                     }}
                     onTextEditEnd={(e) => onUpdateLine && onUpdateLine(line.id, e.characters)}
                     fontSize={fontSize}
-                    fontFamily="Inter"
+                    fontFamily={block.type === 'code' ? "IBM Plex Mono" : "Inter"}
                     fontWeight={fontWeight as 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900}
                     fill={colors.textPrimary}
                     width="fill-parent"
@@ -806,7 +836,7 @@ function TextBlock({
           })}
 
           {/* Add line button at bottom */}
-          {onAddLine && lines.length > 0 && lines[lines.length - 1].text.length > 0 && (
+          {onAddLine && lines.length > 0 && (
             <AutoLayout
               direction="horizontal"
               spacing={4}
@@ -976,7 +1006,7 @@ function TodoItem({
       {/* Todo Text */}
       <Input
         value={todo.text}
-        placeholder={`To do ${todo.text ? '' : '1'}`}
+        placeholder={`To do`}
         onClick={() => {
           if (onFocus) onFocus();
         }}
@@ -999,7 +1029,7 @@ function TodoItem({
 
 
 // Add Block Menu Component
-function AddBlockMenu({ onAddText, onAddTodo }: { onAddText: () => void; onAddTodo: () => void }) {
+function AddBlockMenu({ onAddText, onAddTodo, onAddCode }: { onAddText: () => void; onAddTodo: () => void; onAddCode: () => void }) {
   return (
     <AutoLayout
       name="AddBlock"
@@ -1028,7 +1058,7 @@ function AddBlockMenu({ onAddText, onAddTodo }: { onAddText: () => void; onAddTo
           top: 8,
           right: 12,
           bottom: 8,
-          left: 8,
+          left: 12,
         }}
         verticalAlignItems="center"
       >
@@ -1090,7 +1120,7 @@ function AddBlockMenu({ onAddText, onAddTodo }: { onAddText: () => void; onAddTo
         spacing={11}
         padding={{
           top: 8,
-          right: 8,
+          right: 12,
           bottom: 8,
           left: 12,
         }}
@@ -1138,6 +1168,68 @@ function AddBlockMenu({ onAddText, onAddTodo }: { onAddText: () => void; onAddTo
             fontWeight={500}
           >
             To-do
+          </Text>
+        </AutoLayout>
+      </AutoLayout>
+      <SVG
+        name="divider-2"
+        height="fill-parent"
+        src={`<svg height='40' viewBox='0 0 0 40' fill='none' xmlns='http://www.w3.org/2000/svg'>
+<path d='M0 0V40' stroke='#363636' stroke-width='2'/>
+</svg>`}
+      />
+      <AutoLayout
+        name="Code section"
+        fill="#151515"
+        overflow="visible"
+        spacing={11}
+        padding={{
+          top: 8,
+          right: 12,
+          bottom: 8,
+          left: 12,
+        }}
+        verticalAlignItems="center"
+      >
+        <AutoLayout
+          name="Code button"
+          fill="#2D2D2D"
+          cornerRadius={4}
+          overflow="visible"
+          spacing={8}
+          padding={{
+            vertical: 4,
+            horizontal: 8,
+          }}
+          height={24}
+          horizontalAlignItems="center"
+          verticalAlignItems="center"
+          onClick={onAddCode}
+          hoverStyle={{ fill: "#3D3D3D" }}
+        >
+          <Frame
+            name="code icon"
+            width={12}
+            height={12}
+          >
+            <SVG
+              name="code-icon"
+              height={12}
+              width={12}
+              src={codeIcon}
+            />
+          </Frame>
+          <Text
+            name="Code"
+            fill="#FFF"
+            verticalAlignText="center"
+            lineHeight={24}
+            fontFamily="Inter"
+            fontSize={12}
+            letterSpacing={0.5}
+            fontWeight={500}
+          >
+            Code
           </Text>
         </AutoLayout>
       </AutoLayout>
