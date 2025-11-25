@@ -22,7 +22,7 @@ you previously didn't notice.
 
 For more information, visit https://www.typescriptlang.org/
 
-Using TypeScript requires a compiler to convert TypeScript (widget-src/code.tsx) into JavaScript (dist/code.js)
+Using TypeScript requires a compiler to convert TypeScript (code.tsx) into JavaScript (dist/code.js)
 for the browser to run. We use esbuild to do this for us.
 
 We recommend writing TypeScript code using Visual Studio code:
@@ -34,3 +34,30 @@ We recommend writing TypeScript code using Visual Studio code:
    you reopen Visual Studio Code.
 
 That's it! Visual Studio Code will regenerate the JavaScript file every time you save.
+
+## Project Structure
+
+- **code.tsx** - Main widget source code
+- **types.ts** - TypeScript type definitions
+- **constants/** - Centralized constants
+  - `layout.ts` - Dimensions, spacing, typography
+  - `theme.ts` - Color themes
+  - `icons.ts` - SVG icons and helpers
+- **utils/** - Helper functions and business logic
+  - `helpers.ts` - Utility functions
+  - `blockOperations.ts` - Block manipulation logic
+- **dist/** - Compiled output
+  - `code.js` - Bundled widget code loaded by Figma
+  - `code.js.map` - Source map for debugging
+- **manifest.json** - Widget metadata and configuration
+- **package.json** - Dependencies and build scripts
+- **tsconfig.json** - TypeScript configuration
+
+## Build Scripts
+
+- `npm run build` - Build with source maps (development)
+- `npm run build:prod` - Build minified (production)
+- `npm run watch` - Watch mode for development
+- `npm run tsc` - Type check without building
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint errors
