@@ -1,6 +1,6 @@
 // Helper functions for the Sticky Pro widget
-import type { TextFormat } from './types';
-import { TYPOGRAPHY } from './constants/layout';
+import type { TextFormat } from '../types';
+import { TYPOGRAPHY } from '../constants/layout';
 
 /**
  * Get typography settings for a given text format

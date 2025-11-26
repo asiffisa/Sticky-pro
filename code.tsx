@@ -2,30 +2,49 @@ const { widget } = figma;
 const { useSyncedState, usePropertyMenu, AutoLayout, Input, Text, SVG, Frame } = widget;
 
 // Import types
-import type { BlockType, TextFormat, ListType, TodoItem, TextLine, Block } from './types';
+import type { BlockType, TextFormat, TodoItem, Block } from './types';
 
 // Import constants
 import { themeColors } from './constants/theme';
 import {
-  bulletIcon,
-  numberedIcon,
-  expandIcon,
-  shrinkIcon,
-  lightThemeIcon,
-  darkThemeIcon,
   codeIcon,
-  getPlusIcon
+  getPlusIcon,
 } from './constants/icons';
 
-// Generate unique IDs with counter for guaranteed uniqueness
-let idCounter = 0;
-function generateId(): string {
-  return `${Date.now()}-${(idCounter++).toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
-}
+// Import utilities
+import { generateId } from './utils/helpers';
+import { createPropertyMenu, handlePropertyMenuAction } from './utils/propertyMenu';
+import { getTextFormat } from './utils/textFormat';
 
-// Main Widget Component
+// Import hooks
+import { createBlockOperations } from './hooks/useBlockOperations';
+import { createFocusManagement } from './hooks/useFocusManagement';
+
+// Import components
+import { MainHeading } from './components/MainHeading';
+import { CloseButton } from './components/CloseButton';
+
+/**
+ * Main Widget Component for Sticky Pro
+ * 
+ * A versatile Figma widget that supports multiple block types:
+ * - Text blocks with formatting (H1, B1, C1)
+ * - Code blocks with syntax highlighting
+ * - Todo blocks with checkboxes
+ * 
+ * Features:
+ * - Dark/Light theme support
+ * - Resizable width (360px or 480px)
+ * - Native Figma property menu integration
+ * - Focus management for inline editing
+ */
 function StickyProWidget() {
+  // ==================== State Management ====================
+
+  /** Main heading text displayed at the top of the widget */
   const [mainHeading, setMainHeading] = useSyncedState<string>('mainHeading', '');
+
+  /** Array of all blocks in the widget */
   const [blocks, setBlocks] = useSyncedState<Block[]>('blocks', [
     {
       id: 'initial-block',
@@ -36,343 +55,104 @@ function StickyProWidget() {
       lines: [{ id: 'initial-line', text: '', format: 'B1' }],
     },
   ]);
+
+  /** Widget width - either 360px (narrow) or 480px (wide) */
   const [width, setWidth] = useSyncedState<360 | 480>('width', 360);
+
+  /** ID of the currently focused block, null if no block is focused */
   const [focusedBlockId, setFocusedBlockId] = useSyncedState<string | null>('focusedBlockId', null);
+
+  /** ID of the currently focused line within a text block */
   const [focusedLineId, setFocusedLineId] = useSyncedState<string | null>('focusedLineId', null);
+
+  /** ID of the currently focused todo item within a todo block */
+  const [focusedTodoId, setFocusedTodoId] = useSyncedState<string | null>('focusedTodoId', null);
+
+  /** Controls visibility of the add block toolbar */
   const [showAddBlockToolbar, setShowAddBlockToolbar] = useSyncedState<boolean>('showAddBlockToolbar', false);
-  const [showFormatDropdown, setShowFormatDropdown] = useSyncedState<boolean>('showFormatDropdown', false);
+
+  /** Current theme - 'dark' or 'light' */
   const [theme, setTheme] = useSyncedState<'dark' | 'light'>('theme', 'dark');
 
-  // Get focused block
+  // ==================== Derived State ====================
+
+  /** The currently focused block object, or undefined if no block is focused */
   const focusedBlock = blocks.find((b) => b.id === focusedBlockId);
 
-  // Get focused line for formatting
-  const focusedLine = focusedBlock?.lines?.find((l) => l.id === focusedLineId);
+  // ==================== Custom Hooks ====================
 
-  // Property Menu for native Figma toolbar
-  // Note: The position of this menu is controlled by Figma and cannot be changed.
-  usePropertyMenu(
-    [
-      // Text format buttons (only show when a text block is actually focused)
-      ...(focusedBlockId && focusedBlock?.type === 'text' ? [
-        {
-          itemType: 'action' as const,
-          tooltip: 'H1',
-          propertyName: 'format-h1',
-        },
-        {
-          itemType: 'action' as const,
-          tooltip: 'B1',
-          propertyName: 'format-b1',
-        },
-        {
-          itemType: 'action' as const,
-          tooltip: 'C1',
-          propertyName: 'format-c1',
-        },
-        {
-          itemType: 'separator' as const,
-        },
-        {
-          itemType: 'toggle' as const,
-          tooltip: 'Bullet List',
-          propertyName: 'list-bullet',
-          isToggled: (focusedBlock?.listType || 'none') === 'bullet',
-          icon: bulletIcon,
-        },
-        {
-          itemType: 'toggle' as const,
-          tooltip: 'Numbered List',
-          propertyName: 'list-numbered',
-          isToggled: (focusedBlock?.listType || 'none') === 'numbered',
-          icon: numberedIcon,
-        },
-        {
-          itemType: 'separator' as const,
-        },
-      ] : []),
-      // Theme and Width toggle (always visible)
-      {
-        itemType: 'action' as const,
-        tooltip: theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-        propertyName: 'toggle-theme',
-        icon: theme === 'dark' ? lightThemeIcon : darkThemeIcon,
-      },
-      {
-        itemType: 'separator' as const,
-      },
-      {
-        itemType: 'action' as const,
-        tooltip: width === 360 ? 'Expand Width' : 'Shrink Width',
-        propertyName: 'toggle-width',
-        icon: width === 360 ? expandIcon : shrinkIcon,
-      },
-    ],
-    ({ propertyName }) => {
-      // Handle width toggle
-      if (propertyName === 'toggle-width') {
-        toggleWidth();
-        return;
-      }
+  /** Block operations hook - provides all block manipulation functions */
+  const blockOps = createBlockOperations(blocks, setBlocks);
 
-      // Handle theme toggle
-      if (propertyName === 'toggle-theme') {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
-        return;
-      }
-
-      if (!focusedBlockId || !focusedBlock) return;
-
-      // Handle format changes
-      if (propertyName === 'format-h1' || propertyName === 'format-b1' || propertyName === 'format-c1') {
-        const format = propertyName.split('-')[1].toUpperCase() as TextFormat;
-        if (focusedLineId) {
-          updateLineFormat(focusedBlockId, focusedLineId, format);
-        } else {
-          updateBlockFormat(focusedBlockId, format);
-        }
-      }
-
-      // Handle list type changes
-      if (propertyName === 'list-bullet') {
-        const newListType = (focusedBlock.listType || 'none') === 'bullet' ? 'none' : 'bullet';
-        updateBlockListType(focusedBlockId, newListType);
-      }
-      if (propertyName === 'list-numbered') {
-        const newListType = (focusedBlock.listType || 'none') === 'numbered' ? 'none' : 'numbered';
-        updateBlockListType(focusedBlockId, newListType);
-      }
-    }
+  /** Focus management hook - provides focus state management functions */
+  const focusOps = createFocusManagement(
+    focusedBlockId,
+    setFocusedBlockId,
+    focusedLineId,
+    setFocusedLineId,
+    focusedTodoId,
+    setFocusedTodoId
   );
 
-  // Handle block deletion
-  const deleteBlock = (blockId: string) => {
-    // Validate block exists
-    const blockExists = blocks.some((b) => b.id === blockId);
-    if (!blockExists) {
-      console.warn(`[deleteBlock] Block ${blockId} not found`);
-      return;
-    }
+  // ==================== Helper Functions ====================
 
-    // Clear focus states FIRST if the deleted block was focused
-    // This prevents the toolbar from trying to access a deleted block
-    if (focusedBlockId === blockId) {
-      setFocusedBlockId(null);
-      setFocusedLineId(null);
-    }
-
-    // Then delete the block
-    const newBlocks = blocks.filter((b) => b.id !== blockId);
-    setBlocks(newBlocks);
-  };
-
-  // Handle adding new block
-  const addBlock = (type: BlockType) => {
-    const blockId = generateId();
-    const newBlock: Block = {
-      id: blockId,
-      type,
-      content: '',
-      ...(type === 'text' && {
-        format: 'B1',
-        listType: 'none',
-        lines: [{ id: generateId(), text: '', format: 'B1' }]
-      }),
-      ...(type === 'todo' && {
-        todos: [{ id: generateId(), text: '', completed: false }]
-      }),
-    };
-
-    setBlocks([...blocks, newBlock]);
-    setFocusedBlockId(blockId);
-    setShowAddBlockToolbar(false);
-  };
-
-  // Add line to text block
-  const addLineToBlock = (blockId: string, afterLineId?: string) => {
-    setBlocks(
-      blocks.map((b) => {
-        if (b.id === blockId && (b.type === 'text' || b.type === 'code')) {
-          const lines = b.lines || [{ id: generateId(), text: b.content || '', format: b.format || 'B1' }];
-          const newLine: TextLine = {
-            id: generateId(),
-            text: '',
-            format: lines[lines.length - 1]?.format || 'B1',
-          };
-
-          if (afterLineId) {
-            const index = lines.findIndex(l => l.id === afterLineId);
-            const newLines = [
-              ...lines.slice(0, index + 1),
-              newLine,
-              ...lines.slice(index + 1),
-            ];
-            return { ...b, lines: newLines };
-          }
-
-          return { ...b, lines: [...lines, newLine] };
-        }
-        return b;
-      })
-    );
-  };
-
-  // Update line in text block
-  const updateLineInBlock = (blockId: string, lineId: string, text: string) => {
-    setBlocks(
-      blocks.map((b) => {
-        if (b.id === blockId && (b.type === 'text' || b.type === 'code')) {
-          const lines = b.lines || [];
-          return {
-            ...b,
-            lines: lines.map(l => l.id === lineId ? { ...l, text } : l)
-          };
-        }
-        return b;
-      })
-    );
-  };
-
-  // Update line format in text block
-  const updateLineFormat = (blockId: string, lineId: string, format: TextFormat) => {
-    setBlocks(
-      blocks.map((b) => {
-        if (b.id !== blockId || (b.type !== 'text' && b.type !== 'code')) return b;
-        return {
-          ...b,
-          lines: (b.lines || []).map(l => l.id === lineId ? { ...l, format } : l)
-        };
-      })
-    );
-  };
-
-  // Delete line from text block
-  const deleteLineFromBlock = (blockId: string, lineId: string) => {
-    setBlocks(
-      blocks.map((b) => {
-        if (b.id !== blockId || (b.type !== 'text' && b.type !== 'code')) return b;
-
-        const lines = (b.lines || []).filter(l => l.id !== lineId);
-        // If no lines left, keep at least one empty line
-        return {
-          ...b,
-          lines: lines.length === 0 ? [{ id: generateId(), text: '', format: 'B1' }] : lines
-        };
-      })
-    );
-  };
-
-  // Update block content
-  const updateBlockContent = (blockId: string, content: string) => {
-    setBlocks(blocks.map((b) => b.id === blockId ? { ...b, content } : b));
-  };
-
-  // Update block format
-  const updateBlockFormat = (blockId: string, format: TextFormat) => {
-    setBlocks(blocks.map((b) => b.id === blockId ? { ...b, format } : b));
-    setShowFormatDropdown(false);
-  };
-
-  // Update block list type
-  const updateBlockListType = (blockId: string, listType: ListType) => {
-    setBlocks(blocks.map((b) => b.id === blockId ? { ...b, listType } : b));
-  };
-
-  // Toggle width
+  /**
+   * Toggles the widget width between narrow (360px) and wide (480px)
+   */
   const toggleWidth = () => {
     setWidth(width === 360 ? 480 : 360);
   };
 
-  // Add todo item
-  const addTodoItem = (blockId: string) => {
-    setBlocks(
-      blocks.map((b) => {
-        if (b.id !== blockId || b.type !== 'todo') return b;
-        const newTodo: TodoItem = {
-          id: generateId(),
-          text: '',
-          completed: false,
-        };
-        return { ...b, todos: [...(b.todos || []), newTodo] };
-      })
-    );
+  /**
+   * Deletes a block and clears focus if the deleted block was focused
+   * @param blockId - ID of the block to delete
+   */
+  const handleDeleteBlock = (blockId: string) => {
+    focusOps.clearFocusIfBlock(blockId);
+    blockOps.deleteBlock(blockId);
   };
 
-  // Update todo item
-  const updateTodoItem = (blockId: string, todoId: string, text: string) => {
-    setBlocks(
-      blocks.map((b) => {
-        if (b.id !== blockId || b.type !== 'todo') return b;
-        return {
-          ...b,
-          todos: (b.todos || []).map((t) => t.id === todoId ? { ...t, text } : t)
-        };
-      })
-    );
+  /**
+   * Adds a new block of the specified type and sets focus to it
+   * @param type - Type of block to add ('text', 'code', or 'todo')
+   */
+  const handleAddBlock = (type: BlockType) => {
+    const blockId = blockOps.addBlock(type);
+    setFocusedBlockId(blockId);
+    setShowAddBlockToolbar(false);
   };
 
-  // Toggle todo completion
-  const toggleTodoCompletion = (blockId: string, todoId: string) => {
-    setBlocks(
-      blocks.map((b) => {
-        if (b.id !== blockId || b.type !== 'todo') return b;
-        return {
-          ...b,
-          todos: (b.todos || []).map((t) => t.id === todoId ? { ...t, completed: !t.completed } : t)
-        };
-      })
-    );
-  };
+  // ==================== Property Menu ====================
 
-  // Insert block after a specific block
-  const insertBlockAfter = (blockId: string) => {
-    const blockIndex = blocks.findIndex((b) => b.id === blockId);
-    if (blockIndex === -1) return;
-
-    const newBlock: Block = {
-      id: generateId(),
-      type: 'text',
-      content: '',
-      format: 'B1',
-      listType: 'none',
-      lines: [{ id: generateId(), text: '', format: 'B1' }],
-    };
-
-    const newBlocks = [
-      ...blocks.slice(0, blockIndex + 1),
-      newBlock,
-      ...blocks.slice(blockIndex + 1),
-    ];
-    setBlocks(newBlocks);
-  };
-
-  // Insert todo item after a specific todo
-  const insertTodoAfter = (blockId: string, todoId: string) => {
-    setBlocks(
-      blocks.map((b) => {
-        if (b.id !== blockId || b.type !== 'todo') return b;
-
-        const todos = b.todos || [];
-        const todoIndex = todos.findIndex((t) => t.id === todoId);
-        if (todoIndex === -1) return b;
-
-        const newTodo: TodoItem = {
-          id: generateId(),
-          text: '',
-          completed: false,
-        };
-
-        return {
-          ...b,
-          todos: [
-            ...todos.slice(0, todoIndex + 1),
-            newTodo,
-            ...todos.slice(todoIndex + 1),
-          ]
-        };
-      })
-    );
-  };
+  /**
+   * Native Figma property menu configuration
+   * Note: The position of this menu is controlled by Figma and cannot be changed.
+   * The menu shows different options based on the focused block type.
+   */
+  usePropertyMenu(
+    createPropertyMenu(focusedBlockId, focusedBlock, theme, width),
+    ({ propertyName }) => {
+      handlePropertyMenuAction(
+        propertyName,
+        focusedBlockId,
+        focusedBlock,
+        focusedLineId,
+        focusedTodoId,
+        {
+          toggleWidth,
+          setTheme,
+          updateLineFormat: blockOps.updateLineFormat,
+          updateBlockFormat: blockOps.updateBlockFormat,
+          updateBlockListType: blockOps.updateBlockListType,
+          deleteLineFromBlock: blockOps.deleteLineFromBlock,
+          setFocusedLineId,
+          deleteTodoItem: blockOps.deleteTodoItem,
+          setFocusedTodoId,
+        },
+        theme
+      );
+    }
+  );
 
   // Get current theme colors
   const colors = themeColors[theme];
@@ -402,10 +182,7 @@ function StickyProWidget() {
           onChange={setMainHeading}
           width={width - 40}
           theme={theme}
-          onFocus={() => {
-            setFocusedBlockId(null);
-            setFocusedLineId(null);
-          }}
+          onFocus={() => focusOps.clearFocus()}
         />
 
         {/* Blocks */}
@@ -417,26 +194,19 @@ function StickyProWidget() {
             isFirst={index === 0}
             isFocused={focusedBlockId === block.id}
             theme={theme}
-            onFocus={() => {
-              // Only update if actually changing blocks for better performance
-              if (focusedBlockId !== block.id) {
-                setFocusedLineId(null);
-                setFocusedBlockId(block.id);
-              }
-            }}
-            onBlur={() => setFocusedBlockId(null)}
-            onDelete={() => deleteBlock(block.id)}
-            onContentChange={(content) => updateBlockContent(block.id, content)}
-            onInsertAfter={() => insertBlockAfter(block.id)}
-            onAddLine={(afterLineId) => addLineToBlock(block.id, afterLineId)}
-            onUpdateLine={(lineId, text) => updateLineInBlock(block.id, lineId, text)}
-            onUpdateLineFormat={(lineId, format) => updateLineFormat(block.id, lineId, format)}
-            onDeleteLine={(lineId) => deleteLineFromBlock(block.id, lineId)}
-            onLineClick={(lineId) => setFocusedLineId(lineId)}
-            onAddTodo={() => addTodoItem(block.id)}
-            onUpdateTodo={(todoId, text) => updateTodoItem(block.id, todoId, text)}
-            onToggleTodo={(todoId) => toggleTodoCompletion(block.id, todoId)}
-            onInsertTodoAfter={(todoId) => insertTodoAfter(block.id, todoId)}
+            onFocus={(opts?: { lineId?: string; todoId?: string }) => focusOps.focusBlock(block.id, opts)}
+            onBlur={() => focusOps.clearFocus()}
+            onDelete={() => handleDeleteBlock(block.id)}
+            onContentChange={(content) => blockOps.updateBlockContent(block.id, content)}
+            onInsertAfter={() => blockOps.insertBlockAfter(block.id)}
+            onAddLine={(afterLineId) => blockOps.addLineToBlock(block.id, afterLineId)}
+            onUpdateLine={(lineId, text) => blockOps.updateLineInBlock(block.id, lineId, text)}
+            onUpdateLineFormat={(lineId, format) => blockOps.updateLineFormat(block.id, lineId, format)}
+            onDeleteLine={(lineId) => blockOps.deleteLineFromBlock(block.id, lineId)}
+            onAddTodo={() => blockOps.addTodoItem(block.id)}
+            onUpdateTodo={(todoId, text) => blockOps.updateTodoItem(block.id, todoId, text)}
+            onToggleTodo={(todoId) => blockOps.toggleTodoCompletion(block.id, todoId)}
+            onInsertTodoAfter={(todoId) => blockOps.insertTodoAfter(block.id, todoId)}
           />
         ))}
 
@@ -470,9 +240,9 @@ function StickyProWidget() {
           x={{ type: 'center', offset: 0 }}
         >
           <AddBlockMenu
-            onAddText={() => addBlock('text')}
-            onAddTodo={() => addBlock('todo')}
-            onAddCode={() => addBlock('code')}
+            onAddText={() => handleAddBlock('text')}
+            onAddTodo={() => handleAddBlock('todo')}
+            onAddCode={() => handleAddBlock('code')}
           />
         </AutoLayout>
       )}
@@ -480,37 +250,35 @@ function StickyProWidget() {
   );
 }
 
-// Main Heading Component
-function MainHeading({ value, onChange, width, theme, onFocus }: { value: string; onChange: (v: string) => void; width: number; theme: 'dark' | 'light'; onFocus?: () => void }) {
-  const colors = themeColors[theme];
+// ==================== Components ====================
+// MainHeading, CloseButton imported from ./components
 
-  return (
-    <AutoLayout
-      direction="horizontal"
-      spacing={6}
-      padding={{ top: 0, bottom: 12, left: 0, right: 0 }}
-      width={width}
-      onClick={onFocus}
-    >
-      <Input
-        value={value}
-        placeholder="Header"
-        onTextEditEnd={(e) => onChange(e.characters)}
-        fontSize={16}
-        fontFamily="Inter"
-        fontWeight={600}
-        fill={colors.textPrimary}
-        width={width}
-        inputFrameProps={{
-          fill: '#00000000',
-          padding: 0,
-        }}
-      />
-    </AutoLayout>
-  );
-}
 
-// Block Component
+/**
+ * Block Component Router
+ * 
+ * Routes to the appropriate block component based on block type.
+ * Handles text, code, and todo blocks.
+ * 
+ * @param block - The block data object
+ * @param width - Width of the block
+ * @param isFirst - Whether this is the first block (affects top padding)
+ * @param isFocused - Whether this block is currently focused
+ * @param theme - Current theme
+ * @param onFocus - Callback when block gains focus
+ * @param onBlur - Callback when block loses focus
+ * @param onDelete - Callback to delete the block
+ * @param onContentChange - Callback when block content changes
+ * @param onInsertAfter - Callback to insert a new block after this one
+ * @param onAddLine - Callback to add a new line (text blocks)
+ * @param onUpdateLine - Callback to update a line (text blocks)
+ * @param onUpdateLineFormat - Callback to update line format (text blocks)
+ * @param onDeleteLine - Callback to delete a line (text blocks)
+ * @param onAddTodo - Callback to add a todo item (todo blocks)
+ * @param onUpdateTodo - Callback to update a todo item (todo blocks)
+ * @param onToggleTodo - Callback to toggle todo completion (todo blocks)
+ * @param onInsertTodoAfter - Callback to insert a todo after another (todo blocks)
+ */
 function BlockComponent({
   block,
   width,
@@ -524,7 +292,6 @@ function BlockComponent({
   onUpdateLine,
   onUpdateLineFormat,
   onDeleteLine,
-  onLineClick,
   onAddTodo,
   onUpdateTodo,
   onToggleTodo,
@@ -537,7 +304,7 @@ function BlockComponent({
   isFirst: boolean;
   isFocused?: boolean;
   theme: 'dark' | 'light';
-  onFocus: () => void;
+  onFocus: (opts?: { lineId?: string; todoId?: string }) => void;
   onBlur: () => void;
   onDelete: () => void;
   onContentChange: (content: string) => void;
@@ -546,7 +313,6 @@ function BlockComponent({
   onUpdateLine?: (lineId: string, text: string) => void;
   onUpdateLineFormat?: (lineId: string, format: TextFormat) => void;
   onDeleteLine?: (lineId: string) => void;
-  onLineClick?: (lineId: string) => void;
   onAddTodo?: () => void;
   onUpdateTodo?: (todoId: string, text: string) => void;
   onToggleTodo?: (todoId: string) => void;
@@ -558,7 +324,6 @@ function BlockComponent({
         block={block}
         width={width}
         isFirst={isFirst}
-        isFocused={!!isFocused}
         theme={theme}
         onFocus={onFocus}
         onBlur={onBlur}
@@ -569,7 +334,6 @@ function BlockComponent({
         onUpdateLine={onUpdateLine}
         onUpdateLineFormat={onUpdateLineFormat}
         onDeleteLine={onDeleteLine}
-        onLineClick={onLineClick}
       />
     );
   } else {
@@ -592,12 +356,33 @@ function BlockComponent({
   }
 }
 
-// Text Block Component
+/**
+ * Text Block Component
+ * 
+ * Displays a text or code block with support for:
+ * - Multiple lines with individual formatting
+ * - List types (bullet, numbered)
+ * - Code syntax highlighting
+ * - Inline editing
+ * 
+ * @param block - The block data object
+ * @param width - Width of the block
+ * @param isFirst - Whether this is the first block
+ * @param theme - Current theme
+ * @param onFocus - Callback when block or line gains focus
+ * @param onBlur - Callback when block loses focus
+ * @param onDelete - Callback to delete the block
+ * @param onContentChange - Callback when content changes (code blocks)
+ * @param onInsertAfter - Callback to insert block after this one
+ * @param onAddLine - Callback to add a new line
+ * @param onUpdateLine - Callback to update a line
+ * @param onUpdateLineFormat - Callback to update line format
+ * @param onDeleteLine - Callback to delete a line
+ */
 function TextBlock({
   block,
   width,
   isFirst,
-  isFocused,
   theme,
   onFocus,
   onBlur,
@@ -608,14 +393,12 @@ function TextBlock({
   onUpdateLine,
   onUpdateLineFormat,
   onDeleteLine,
-  onLineClick,
 }: {
   block: Block;
   width: number;
   isFirst: boolean;
-  isFocused: boolean;
   theme: 'dark' | 'light';
-  onFocus: () => void;
+  onFocus: (opts?: { lineId?: string; todoId?: string }) => void;
   onBlur: () => void;
   onDelete: () => void;
   onContentChange: (content: string) => void;
@@ -624,7 +407,6 @@ function TextBlock({
   onUpdateLine?: (lineId: string, text: string) => void;
   onUpdateLineFormat?: (lineId: string, format: TextFormat) => void;
   onDeleteLine?: (lineId: string) => void;
-  onLineClick?: (lineId: string) => void;
 }) {
   const colors = themeColors[theme];
 
@@ -640,33 +422,53 @@ function TextBlock({
       >
         <AutoLayout
           direction="vertical"
-          spacing={4}
           width="fill-parent"
-          padding={{ left: 12, right: 12, top: 12, bottom: 12 }}
-          fill={colors.blockBg}
-          cornerRadius={10}
           overflow="visible"
-          onClick={onFocus}
         >
-          {/* Close button */}
-          {isFocused && <CloseButton onClick={onDelete} />}
-
-          <Input
-            inputBehavior="multiline"
-            placeholder="<Type code>"
-            value={block.content}
-            onTextEditEnd={(e) => onContentChange(e.characters)}
-            onClick={onFocus}
-            fontSize={14}
-            fontFamily="IBM Plex Mono"
-            fontWeight={400}
-            fill={colors.textPrimary}
+          {/* Outer Container - Acts as the Stroke */}
+          <AutoLayout
+            direction="horizontal"
+            spacing={0}
             width="fill-parent"
-            inputFrameProps={{
-              fill: '#00000000',
-              padding: 0,
-            }}
-          />
+            fill={colors.codeBlockStroke}
+            cornerRadius={10}
+            padding={{ left: 1.2, right: 0, top: 0, bottom: 0 }}
+            onClick={() => onFocus()}
+          >
+            {/* Inner Container - Actual Block Content */}
+            <AutoLayout
+              direction="vertical"
+              width="fill-parent"
+              fill={colors.blockBg}
+              cornerRadius={{
+                topLeft: 8.8,
+                bottomLeft: 8.8,
+                topRight: 10,
+                bottomRight: 10,
+              }}
+              padding={{ left: 11, right: 12, top: 12, bottom: 12 }}
+            >
+              <Input
+                inputBehavior="multiline"
+                placeholder="<Type code>"
+                value={block.content}
+                onTextEditEnd={(e) => onContentChange(e.characters)}
+                onClick={() => onFocus()}
+                fontSize={14}
+                fontFamily="Source Code Pro"
+                fontWeight={400}
+                fill={colors.textPrimary}
+                width="fill-parent"
+                inputFrameProps={{
+                  fill: '#00000000',
+                  padding: 0,
+                }}
+              />
+            </AutoLayout>
+          </AutoLayout>
+
+          {/* Close button - show when focused OR when it's the initial default block */}
+          <CloseButton onClick={onDelete} />
         </AutoLayout>
       </AutoLayout>
     );
@@ -690,10 +492,10 @@ function TextBlock({
         fill={colors.blockBg}
         cornerRadius={10}
         overflow="visible"
-        onClick={onFocus}
+        onClick={() => onFocus()}
       >
-        {/* Close button - positioned outside clickable area */}
-        {isFocused && <CloseButton onClick={onDelete} />}
+        {/* Close button - show when focused OR when it's the initial default block */}
+        <CloseButton onClick={onDelete} />
 
         {/* Clickable area for focusing */}
         <AutoLayout
@@ -739,12 +541,11 @@ function TextBlock({
                     placeholder={"Type"}
                     value={line.text}
                     onClick={() => {
-                      onFocus();
-                      if (onLineClick) onLineClick(line.id);
+                      onFocus({ lineId: line.id });
                     }}
                     onTextEditEnd={(e) => onUpdateLine && onUpdateLine(line.id, e.characters)}
                     fontSize={fontSize}
-                    fontFamily={block.type === 'code' ? "IBM Plex Mono" : "Inter"}
+                    fontFamily={block.type === 'code' ? "Source Code Pro" : "Inter"}
                     fontWeight={fontWeight as 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900}
                     fill={colors.textPrimary}
                     width="fill-parent"
@@ -788,7 +589,25 @@ function TextBlock({
 
 
 
-// Todo Block Component
+/**
+ * Todo Block Component
+ * 
+ * Displays a todo list block with checkboxes.
+ * Supports adding, editing, and completing todo items.
+ * 
+ * @param block - The block data object
+ * @param width - Width of the block
+ * @param isFirst - Whether this is the first block
+ * @param isFocused - Whether this block is currently focused
+ * @param theme - Current theme
+ * @param onFocus - Callback when block or todo gains focus
+ * @param onBlur - Callback when block loses focus
+ * @param onDelete - Callback to delete the block
+ * @param onAddTodo - Callback to add a new todo item
+ * @param onUpdateTodo - Callback to update a todo item
+ * @param onToggleTodo - Callback to toggle todo completion
+ * @param onInsertTodoAfter - Callback to insert todo after another
+ */
 function TodoBlock({
   block,
   width,
@@ -808,7 +627,7 @@ function TodoBlock({
   isFirst: boolean;
   isFocused: boolean;
   theme: 'dark' | 'light';
-  onFocus: () => void;
+  onFocus: (opts?: { lineId?: string; todoId?: string }) => void;
   onBlur: () => void;
   onDelete: () => void;
   onAddTodo: () => void;
@@ -835,10 +654,10 @@ function TodoBlock({
         fill={colors.blockBg}
         cornerRadius={10}
         overflow="visible"
-        onClick={onFocus}
+        onClick={() => onFocus()}
       >
-        {/* Close button */}
-        {isFocused && <CloseButton onClick={onDelete} />}
+        {/* Close button - show when focused OR when it's the initial default block */}
+        <CloseButton onClick={onDelete} />
 
         {/* Todo Items */}
         {todos.map((todo) => (
@@ -849,7 +668,7 @@ function TodoBlock({
             theme={theme}
             onUpdate={(text) => onUpdateTodo(todo.id, text)}
             onToggle={() => onToggleTodo(todo.id)}
-            onFocus={onFocus}
+            onFocus={(opts) => onFocus(opts)}
           />
         ))}
 
@@ -876,7 +695,18 @@ function TodoBlock({
   );
 }
 
-// Todo Item Component
+/**
+ * Todo Item Component
+ * 
+ * Displays a single todo item with checkbox and text input.
+ * 
+ * @param todo - The todo item data
+ * @param width - Width of the todo item
+ * @param theme - Current theme
+ * @param onUpdate - Callback when todo text is updated
+ * @param onToggle - Callback when checkbox is toggled
+ * @param onFocus - Callback when todo gains focus
+ */
 function TodoItem({
   todo,
   width,
@@ -890,7 +720,7 @@ function TodoItem({
   theme: 'dark' | 'light';
   onUpdate: (text: string) => void;
   onToggle: () => void;
-  onFocus?: () => void;
+  onFocus?: (opts?: { todoId?: string }) => void;
 }) {
   const colors = themeColors[theme];
 
@@ -916,7 +746,7 @@ function TodoItem({
         {todo.completed && (
           <SVG
             src={`<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M10 3L4.5 8.5L2 6" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10 3L4.5 8.5L2 6" stroke="${colors.checkboxTick}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`}
           />
         )}
@@ -927,7 +757,7 @@ function TodoItem({
         value={todo.text}
         placeholder={`To do`}
         onClick={() => {
-          if (onFocus) onFocus();
+          if (onFocus) onFocus({ todoId: todo.id });
         }}
         onTextEditEnd={(e) => onUpdate(e.characters)}
         fontSize={14}
@@ -947,7 +777,16 @@ function TodoItem({
 
 
 
-// Add Block Menu Component
+/**
+ * Add Block Menu Component
+ * 
+ * Displays a floating menu with options to add different block types.
+ * Appears at the bottom of the widget when triggered.
+ * 
+ * @param onAddText - Callback to add a text block
+ * @param onAddTodo - Callback to add a todo block
+ * @param onAddCode - Callback to add a code block
+ */
 function AddBlockMenu({ onAddText, onAddTodo, onAddCode }: { onAddText: () => void; onAddTodo: () => void; onAddCode: () => void }) {
   return (
     <AutoLayout
@@ -1156,45 +995,6 @@ function AddBlockMenu({ onAddText, onAddTodo, onAddCode }: { onAddText: () => vo
   );
 }
 
-
-
-// Close Button Component
-function CloseButton({ onClick }: { onClick: () => void }) {
-  return (
-    <AutoLayout
-      width={16}
-      height={16}
-      fill="#00000000"
-      positioning="absolute"
-      x={{ type: 'right', offset: -6 }}
-      y={-6}
-      onClick={onClick}
-      horizontalAlignItems="center"
-      verticalAlignItems="center"
-    >
-      <SVG
-        src={`<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="12" height="12" rx="6" fill="black"/>
-<path d="M5.9999 6.70039L3.5499 9.15039C3.45824 9.24206 3.34157 9.28789 3.1999 9.28789C3.05824 9.28789 2.94157 9.24206 2.8499 9.15039C2.75824 9.05872 2.7124 8.94206 2.7124 8.80039C2.7124 8.65872 2.75824 8.54206 2.8499 8.45039L5.2999 6.00039L2.8499 3.55039C2.75824 3.45872 2.7124 3.34206 2.7124 3.20039C2.7124 3.05872 2.75824 2.94206 2.8499 2.85039C2.94157 2.75872 3.05824 2.71289 3.1999 2.71289C3.34157 2.71289 3.45824 2.75872 3.5499 2.85039L5.9999 5.30039L8.4499 2.85039C8.54157 2.75872 8.65824 2.71289 8.7999 2.71289C8.94157 2.71289 9.05824 2.75872 9.1499 2.85039C9.24157 2.94206 9.2874 3.05872 9.2874 3.20039C9.2874 3.34206 9.24157 3.45872 9.1499 3.55039L6.6999 6.00039L9.1499 8.45039C9.24157 8.54206 9.2874 8.65872 9.2874 8.80039C9.2874 8.94206 9.24157 9.05872 9.1499 9.15039C9.05824 9.24206 8.94157 9.28789 8.7999 9.28789C8.65824 9.28789 8.54157 9.24206 8.4499 9.15039L5.9999 6.70039Z" fill="white"/>
-</svg>`}
-      />
-    </AutoLayout>
-  );
-}
-
-
-// Helper Functions
-function getTextFormat(format: TextFormat): { fontSize: number; fontWeight: number; lineHeight: number } {
-  switch (format) {
-    case 'H1':
-      return { fontSize: 16, fontWeight: 700, lineHeight: 24 };
-    case 'B1':
-      return { fontSize: 14, fontWeight: 400, lineHeight: 22 };
-    case 'C1':
-      return { fontSize: 10, fontWeight: 400, lineHeight: 17 };
-  }
-}
-
-
+// ==================== Widget Registration ====================
 
 widget.register(StickyProWidget);
