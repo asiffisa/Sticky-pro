@@ -1,16 +1,16 @@
 // SVG Icon constants
 export const bulletIcon = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M2.71429 6.82799C3.10877 6.82799 3.42857 6.50819 3.42857 6.1137C3.42857 5.71921 3.10877 5.39941 2.71429 5.39941C2.3198 5.39941 2 5.71921 2 6.1137C2 6.50819 2.3198 6.82799 2.71429 6.82799Z" fill="white" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M6.42857 6.11426H18.4286" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M2.71429 14.2567C3.10877 14.2567 3.42857 13.9369 3.42857 13.5424C3.42857 13.1479 3.10877 12.8281 2.71429 12.8281C2.3198 12.8281 2 13.1479 2 13.5424C2 13.9369 2.3198 14.2567 2.71429 14.2567Z" fill="white" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M6.42857 13.543H18.4286" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2.71641 6.8C3.21346 6.8 3.61641 6.39706 3.61641 5.9C3.61641 5.40294 3.21346 5 2.71641 5C2.21935 5 1.81641 5.40294 1.81641 5.9C1.81641 6.39706 2.21935 6.8 2.71641 6.8Z" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7 5.90039H18" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2.71641 14.3C3.21346 14.3 3.61641 13.8971 3.61641 13.4C3.61641 12.9029 3.21346 12.5 2.71641 12.5C2.21935 12.5 1.81641 12.9029 1.81641 13.4C1.81641 13.8971 2.21935 14.3 2.71641 14.3Z" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7 13.5H18" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
 
 export const numberedIcon = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M1.83565 7.49944V4.99248H1V4.5H2.32869V7.5L1.83565 7.49944Z" fill="white"/>
-<path d="M5.32869 6H18.1858" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M1 15V13.6393C1 13.5301 1.03696 13.4385 1.11088 13.3646C1.18481 13.2907 1.27637 13.2535 1.38559 13.2532H2.39302V12.4926H1V12H2.5C2.60921 12 2.70078 12.037 2.7747 12.1109C2.84863 12.1848 2.88577 12.2764 2.88614 12.3856V13.3607C2.88614 13.4699 2.849 13.5615 2.7747 13.6354C2.70041 13.7093 2.60884 13.7465 2.5 13.7468H1.49257V14.5074H2.88559V15H1Z" fill="white"/>
-<path d="M5.88614 13.5H18.7433" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2.13208 7.99926V4.65664H1V4H2.8V8L2.13208 7.99926Z" fill="white"/>
+<path d="M1 15.5V13.6857C1 13.5401 1.04928 13.418 1.14785 13.3195C1.24641 13.2209 1.3685 13.1714 1.51412 13.1709H2.85736V12.1568H1V11.5H3C3.14562 11.5 3.26771 11.5493 3.36627 11.6478C3.46483 11.7464 3.51436 11.8685 3.51486 12.0141V13.3143C3.51486 13.4599 3.46533 13.582 3.36627 13.6805C3.26721 13.7791 3.14512 13.8286 3 13.8291H1.65676V14.8432H3.51412V15.5H1Z" fill="white"/>
+<path d="M7 5.90039H18" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7 13.5H18" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
 
 export const expandIcon = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

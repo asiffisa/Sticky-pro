@@ -534,15 +534,15 @@ function TextBlock({
                 <AutoLayout
                   width="fill-parent"
                   height="hug-contents"
+                  onClick={() => {
+                    onFocus({ lineId: line.id });
+                  }}
                 >
 
                   <Input
                     inputBehavior="multiline"
                     placeholder={"Type"}
                     value={line.text}
-                    onClick={() => {
-                      onFocus({ lineId: line.id });
-                    }}
                     onTextEditEnd={(e) => onUpdateLine && onUpdateLine(line.id, e.characters)}
                     fontSize={fontSize}
                     fontFamily={block.type === 'code' ? "Source Code Pro" : "Inter"}
@@ -752,25 +752,31 @@ function TodoItem({
         )}
       </AutoLayout>
 
+
       {/* Todo Text */}
-      <Input
-        value={todo.text}
-        placeholder={`To do`}
+      <AutoLayout
+        width={width - 24}
+        height="hug-contents"
         onClick={() => {
           if (onFocus) onFocus({ todoId: todo.id });
         }}
-        onTextEditEnd={(e) => onUpdate(e.characters)}
-        fontSize={14}
-        fontFamily="Inter"
-        fontWeight={400}
-        textDecoration={todo.completed ? 'strikethrough' : 'none'}
-        fill={todo.completed ? colors.todoCompleted : colors.textPrimary}
-        width={width - 24}
-        inputFrameProps={{
-          fill: '#00000000',
-          padding: 0,
-        }}
-      />
+      >
+        <Input
+          value={todo.text}
+          placeholder={`To do`}
+          onTextEditEnd={(e) => onUpdate(e.characters)}
+          fontSize={14}
+          fontFamily="Inter"
+          fontWeight={400}
+          textDecoration={todo.completed ? 'strikethrough' : 'none'}
+          fill={todo.completed ? colors.todoCompleted : colors.textPrimary}
+          width="fill-parent"
+          inputFrameProps={{
+            fill: '#00000000',
+            padding: 0,
+          }}
+        />
+      </AutoLayout>
     </AutoLayout>
   );
 }
