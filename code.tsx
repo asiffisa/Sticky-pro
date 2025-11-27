@@ -9,6 +9,7 @@ import { themeColors } from './constants/theme';
 import {
   codeIcon,
   getPlusIcon,
+  getRotatedPlusIcon,
 } from './constants/icons';
 
 // Import utilities
@@ -210,23 +211,50 @@ function StickyProWidget() {
           />
         ))}
 
-        {/* Add Block Button */}
+        {/* Add Block Button / Close Toolbar Button */}
         <AutoLayout
           direction="horizontal"
-          spacing={6}
+          spacing={4}
           padding={{ top: 12, bottom: 0, left: 0, right: 0 }}
           width="hug-contents"
+          verticalAlignItems="center"
           onClick={() => setShowAddBlockToolbar(!showAddBlockToolbar)}
         >
-          <Text
-            fontSize={12}
-            fontFamily="Inter"
-            fontWeight={400}
-            fill={colors.addButtonText}
-            horizontalAlignText="center"
-          >
-            + Add new block
-          </Text>
+          {showAddBlockToolbar ? (
+            <>
+              <SVG
+                src={getRotatedPlusIcon(colors.addButtonText)}
+                width={10}
+                height={10}
+              />
+              <Text
+                fontSize={12}
+                fontFamily="Inter"
+                fontWeight={400}
+                fill={colors.addButtonText}
+                horizontalAlignText="center"
+              >
+                Close block
+              </Text>
+            </>
+          ) : (
+            <>
+              <SVG
+                src={getPlusIcon(colors.addButtonText)}
+                width={10}
+                height={10}
+              />
+              <Text
+                fontSize={12}
+                fontFamily="Inter"
+                fontWeight={400}
+                fill={colors.addButtonText}
+                horizontalAlignText="center"
+              >
+                Add new block
+              </Text>
+            </>
+          )}
         </AutoLayout>
       </AutoLayout>
 
@@ -797,7 +825,7 @@ function AddBlockMenu({ onAddText, onAddTodo, onAddCode }: { onAddText: () => vo
   return (
     <AutoLayout
       name="AddBlock"
-      cornerRadius={8}
+      cornerRadius={10}
       verticalAlignItems="center"
       effect={{
         type: 'drop-shadow',
@@ -820,9 +848,9 @@ function AddBlockMenu({ onAddText, onAddTodo, onAddCode }: { onAddText: () => vo
         spacing={11}
         padding={{
           top: 8,
-          right: 12,
+          right: 10,
           bottom: 8,
-          left: 12,
+          left: 8,
         }}
         verticalAlignItems="center"
       >
@@ -884,9 +912,9 @@ function AddBlockMenu({ onAddText, onAddTodo, onAddCode }: { onAddText: () => vo
         spacing={11}
         padding={{
           top: 8,
-          right: 12,
+          right: 10,
           bottom: 8,
-          left: 12,
+          left: 10,
         }}
         verticalAlignItems="center"
       >
@@ -949,9 +977,9 @@ function AddBlockMenu({ onAddText, onAddTodo, onAddCode }: { onAddText: () => vo
         spacing={11}
         padding={{
           top: 8,
-          right: 12,
+          right: 8,
           bottom: 8,
-          left: 12,
+          left: 10,
         }}
         verticalAlignItems="center"
       >

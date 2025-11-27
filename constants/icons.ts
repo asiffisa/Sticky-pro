@@ -69,6 +69,15 @@ export function getPlusIcon(fillColor: string): string {
     return plusIconBase.replace('FILL_COLOR', fillColor);
 }
 
+// Helper function to generate rotated plus icon (45 degrees) with specific fill color
+export function getRotatedPlusIcon(fillColor: string): string {
+    return `<svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g transform="rotate(45 6 6)">
+<path d="M5.42857 6.57143H2.57143C2.40953 6.57143 2.27391 6.51657 2.16457 6.40686C2.05524 6.29714 2.00038 6.16153 2 6C1.99962 5.83848 2.05448 5.70286 2.16457 5.59314C2.27467 5.48343 2.41029 5.42857 2.57143 5.42857H5.42857V2.57143C5.42857 2.40953 5.48343 2.27391 5.59314 2.16457C5.70286 2.05524 5.83848 2.00038 6 2C6.16153 1.99962 6.29734 2.05448 6.40743 2.16457C6.51753 2.27467 6.57219 2.41029 6.57143 2.57143V5.42857H9.42857C9.59048 5.42857 9.72629 5.48343 9.836 5.59314C9.94572 5.70286 10.0004 5.83848 10 6C9.99962 6.16153 9.94476 6.29734 9.83543 6.40743C9.7261 6.51753 9.59048 6.57219 9.42857 6.57143H6.57143V9.42857C6.57143 9.59048 6.51657 9.72629 6.40686 9.836C6.29714 9.94572 6.16153 10.0004 6 10C5.83848 9.99962 5.70286 9.94476 5.59314 9.83543C5.48343 9.7261 5.42857 9.59048 5.42857 9.42857V6.57143Z" fill="${fillColor}"/>
+</g>
+</svg>`;
+}
+
 // Helper function to generate edit icon with specific stroke color
 export function getEditIcon(strokeColor: string): string {
     return editIconPlaceholder.replace('STROKE_COLOR', strokeColor);
