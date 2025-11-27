@@ -462,6 +462,7 @@ function TextBlock({
             cornerRadius={10}
             padding={{ left: 1.2, right: 0, top: 0, bottom: 0 }}
             onClick={() => onFocus()}
+            overflow="visible"
           >
             {/* Inner Container - Actual Block Content */}
             <AutoLayout
@@ -475,6 +476,7 @@ function TextBlock({
                 bottomRight: 10,
               }}
               padding={{ left: 11, right: 12, top: 12, bottom: 12 }}
+              overflow="visible"
             >
               <Input
                 inputBehavior="multiline"
