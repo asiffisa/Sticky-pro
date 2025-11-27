@@ -1,7 +1,7 @@
 // Theme color definitions
 export const themeColors = {
     dark: {
-        widgetBg: '#000000',
+        widgetBg: '#080808',
         blockBg: '#1A1A1A',
         textPrimary: '#FFFFFF',
         textSecondary: '#505050',
