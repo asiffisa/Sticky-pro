@@ -37,7 +37,7 @@ A powerful and versatile Figma widget for creating interactive sticky notes with
 
 - **Node.js** (v14 or higher) - [Download here](https://nodejs.org/en/download/)
 - **Figma Desktop App** - Required for widget development
-- **Antigravity by Google** (recommended) - [Open here](https://idx.google.com/)
+- **Antigravity by Google** (recommended) - [Open here](https://antigravity.google/)
 
 ### Installation
 
