@@ -190,8 +190,7 @@ Successfully completed **ALL 5 PHASES** of the codebase improvement plan for the
 ├── utils/
 │   ├── helpers.ts
 │   ├── propertyMenu.ts     (NEW)
-│   ├── textFormat.ts       (NEW)
-│   └── blockOperations.ts
+│   └── textFormat.ts       (NEW)
 ├── constants/
 │   ├── theme.ts
 │   ├── icons.ts

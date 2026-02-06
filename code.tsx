@@ -1,5 +1,5 @@
 const { widget } = figma;
-const { useSyncedState, usePropertyMenu, AutoLayout, Input, Text, SVG, Frame } = widget;
+const { useSyncedState, usePropertyMenu, AutoLayout, Text, SVG } = widget;
 
 // Import types
 import type { BlockType, Block } from './types';
@@ -12,7 +12,6 @@ import {
 } from './constants/icons';
 
 // Import utilities
-import { generateId } from './utils/helpers';
 import { createPropertyMenu, handlePropertyMenuAction } from './utils/propertyMenu';
 
 // Import hooks
