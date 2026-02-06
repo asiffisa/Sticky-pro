@@ -1,6 +1,10 @@
 # Sticky Pro
 
+[![Figma Widget](https://img.shields.io/badge/Figma-Widget-F24E1E?logo=figma&logoColor=white)](https://www.figma.com/widget-docs/)
+
 A powerful and versatile Figma widget for creating interactive sticky notes with multiple content types like rich text editing, code blocks, and task management capabilities.
+
+![Sticky Pro Cover](assets/Sticky%20pro%20cover.jpg)
 
 ## ✨ Features
 
@@ -33,7 +37,7 @@ A powerful and versatile Figma widget for creating interactive sticky notes with
 
 - **Node.js** (v14 or higher) - [Download here](https://nodejs.org/en/download/)
 - **Figma Desktop App** - Required for widget development
-- **Visual Studio Code** (recommended) - [Download here](https://code.visualstudio.com/)
+- **Antigravity by Google** (recommended) - [Open here](https://idx.google.com/)
 
 ### Installation
 
@@ -62,7 +66,7 @@ A powerful and versatile Figma widget for creating interactive sticky notes with
    npm run watch
    ```
 
-   Or in VS Code:
+   Or in Antigravity by Google:
    - Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
    - Type "Run Build Task"
    - Select "npm: watch"
@@ -86,164 +90,34 @@ A powerful and versatile Figma widget for creating interactive sticky notes with
 
 ### TypeScript
 
-This widget uses **TypeScript** for type safety and better developer experience. TypeScript adds type annotations that help catch bugs early and provide better IDE support.
-
-- **Valid JavaScript is valid TypeScript** - Easy to learn
-- **Type definitions included** - Full Figma API support
-- **Compiled with esbuild** - Fast builds
-
-For more information, visit [TypeScript Documentation](https://www.typescriptlang.org/)
+Built with TypeScript and esbuild for fast, type-safe development.
 
 ## 📁 Project Structure
 
-```
-Sticky-pro/
-├── code.tsx                 # Main widget entry point
-├── types.ts                 # TypeScript type definitions
-├── manifest.json            # Widget metadata and configuration
-├── package.json             # Dependencies and build scripts
-├── tsconfig.json            # TypeScript configuration
-│
-├── components/              # React-like components
-│   ├── MainHeading.tsx      # Main heading input component
-│   ├── BlockComponent.tsx   # Block router component
-│   ├── TextBlock.tsx        # Text block component
-│   ├── TodoBlock.tsx        # Todo block component
-│   ├── TodoItem.tsx         # Individual todo item
-│   ├── AddBlockMenu.tsx     # Block creation menu
-│   └── CloseButton.tsx      # Close button component
-│
-├── hooks/                   # Custom hooks for state management
-│   ├── useBlockOperations.ts    # Block manipulation functions
-│   └── useFocusManagement.ts    # Focus state management
-│
-├── utils/                   # Utility functions
-│   ├── helpers.ts           # General helper functions
-│   ├── propertyMenu.ts     # Property menu configuration
-│   └── textFormat.ts       # Text formatting utilities
-│
-├── constants/               # Centralized constants
-│   ├── theme.ts            # Color themes (dark/light)
-│   ├── layout.ts           # Dimensions, spacing, typography
-│   └── icons.ts            # SVG icons and icon helpers
-│
-└── dist/                    # Compiled output (generated)
-    ├── code.js             # Bundled widget code
-    └── code.js.map         # Source map for debugging
-```
+- `code.tsx` - widget entry point
+- `components/` - UI blocks and menus
+- `hooks/` - state and focus helpers
+- `utils/` and `constants/` - shared logic and config
+- `manifest.json` and `dist/` - widget config and build output
 
-## 🎯 Usage Guide
+## 🎯 Quick Usage
 
-### Creating Blocks
-
-1. **Add a new block**:
-   - Click the "Add new block" button at the bottom
-   - Select block type: Text, Todo, or Code
-
-2. **Edit blocks**:
-   - Click any block to focus and edit
-   - Use the property menu (right-click or widget menu) for formatting options
-
-### Text Blocks
-
-- **Add lines**: Press Enter while editing
-- **Format text**: Use property menu to change format (H1, B1, C1)
-- **Lists**: Convert to bullet or numbered lists via property menu
-- **Delete lines**: Use property menu when a line is focused
-
-### Todo Blocks
-
-- **Add items**: Click "Add todo" or use property menu
-- **Toggle completion**: Click the checkbox
-- **Edit items**: Click the text to edit inline
-- **Delete items**: Use property menu when item is focused
-
-### Customization
-
-- **Change theme**: Use property menu → Theme → Dark/Light
-- **Resize widget**: Use property menu → Width → Narrow/Wide
-- **Set heading**: Click the top heading area to edit
-
-## 🏗️ Architecture
-
-### Component Architecture
-
-The widget follows a modular architecture with clear separation of concerns:
-
-- **Components** - UI components for rendering
-- **Hooks** - Reusable state management logic
-- **Utils** - Pure functions and helpers
-- **Constants** - Centralized configuration
-
-### State Management
-
-- Uses Figma's `useSyncedState` for persistent state
-- Focus management handled through custom hooks
-- Block operations centralized in `useBlockOperations` hook
-
-### Key Design Patterns
-
-- **Component Composition** - Small, focused components
-- **Custom Hooks** - Reusable stateful logic
-- **Utility Functions** - Pure, testable functions
-- **Type Safety** - Full TypeScript coverage
-
-## 📚 Widget API Reference
-
-This widget uses the **Figma Widget API v1.0.0**. Key APIs used:
-
-- `widget.useSyncedState` - Persistent state management
-- `widget.usePropertyMenu` - Native property menu integration
-- `widget.AutoLayout` - Layout components
-- `widget.Input`, `widget.Text`, `widget.SVG` - UI components
-
-For complete API documentation, visit [Figma Widget Documentation](https://www.figma.com/widget-docs/)
+1. Insert the widget in Figma.
+2. Add `Text`, `Todo`, or `Code` blocks.
+3. Use the property menu to format text, switch theme, and resize.
 
 ## 🐛 Troubleshooting
 
-### Widget not loading
-- Ensure `dist/code.js` exists (run `npm run build`)
-- Check browser console for errors
-- Verify `manifest.json` points to correct file
-
-### Changes not appearing
-- Reload the widget in Figma
-- Check that watch mode is running
-- Verify build completed successfully
-
-### Type errors
-- Run `npm run tsc` to check types
-- Ensure all dependencies are installed (`npm install`)
-
-## 📝 Code Quality
-
-This project includes:
-
-- **ESLint** - Code linting with Figma plugin rules
-- **TypeScript** - Type checking and safety
-- **JSDoc** - Comprehensive documentation
-- **Modular Architecture** - Well-organized codebase
-
-## 🤝 Contributing
-
-This is a Figma widget template. To customize:
-
-1. Modify `code.tsx` for main functionality
-2. Add components in `components/` directory
-3. Add utilities in `utils/` directory
-4. Update constants in `constants/` directory
+- Run `npm run build` and confirm `dist/code.js` exists.
+- Use `npm run watch` during development.
+- Reload from `Plugins` -> `Development` -> `Reload current plugin`.
 
 ## 📄 License
 
-[Add your license here]
+MIT License © Asif Ali
 
 ## 🔗 Resources
 
 - [Figma Widget Documentation](https://www.figma.com/widget-docs/)
 - [Figma Widget Setup Guide](https://www.figma.com/widget-docs/setup-guide/)
 - [TypeScript Documentation](https://www.typescriptlang.org/)
-- [Figma Plugin API](https://www.figma.com/plugin-docs/)
-
----
-
-**Made with ❤️ for Figma by Asif**
