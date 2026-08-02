@@ -23,9 +23,7 @@
 export function createFocusManagement(
     focusedBlockId: string | null,
     setFocusedBlockId: (id: string | null) => void,
-    focusedLineId: string | null,
     setFocusedLineId: (id: string | null) => void,
-    focusedTodoId: string | null,
     setFocusedTodoId: (id: string | null) => void
 ) {
     /**
@@ -67,25 +65,9 @@ export function createFocusManagement(
         }
     };
 
-    /**
-     * Sets focus to a specific line within the focused block
-     */
-    const focusLine = (lineId: string) => {
-        setFocusedLineId(lineId);
-    };
-
-    /**
-     * Sets focus to a specific todo within the focused block
-     */
-    const focusTodo = (todoId: string) => {
-        setFocusedTodoId(todoId);
-    };
-
     return {
         focusBlock,
         clearFocus,
         clearFocusIfBlock,
-        focusLine,
-        focusTodo,
     };
 }

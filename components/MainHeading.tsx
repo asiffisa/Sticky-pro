@@ -40,6 +40,7 @@ export function MainHeading({ value, onChange, width, theme, onFocus }: MainHead
             <Input
                 value={value}
                 placeholder="Header"
+                onClick={onFocus}
                 onTextEditEnd={(e) => onChange(e.characters)}
                 fontSize={16}
                 fontFamily="Inter"
@@ -49,6 +50,7 @@ export function MainHeading({ value, onChange, width, theme, onFocus }: MainHead
                 inputFrameProps={{
                     fill: '#00000000',
                     padding: 0,
+                    onClick: onFocus,
                 }}
             />
         </AutoLayout>

@@ -1,170 +1,156 @@
-import type { Block, BlockType, TextFormat, ListType, TodoItem, TextLine } from '../types';
+import type { Block, BlockType, ListType, TextFormat, TextLine, TodoItem } from '../types';
+import { createBlock, getTextLines } from '../utils/blockData';
 import { generateId } from '../utils/helpers';
 
-/**
- * Custom hook for block operations
- * 
- * Provides a comprehensive set of functions for managing blocks in the widget.
- * All operations are centralized here to ensure consistency and reduce code duplication.
- * 
- * @param blocks - Current array of blocks
- * @param setBlocks - State setter function for blocks
- * @returns Object containing all block operation functions
- * 
- * @example
- * ```typescript
- * const blockOps = createBlockOperations(blocks, setBlocks);
- * blockOps.addBlock('text');
- * blockOps.deleteBlock('block-id');
- * ```
- */
-export function createBlockOperations(
-    blocks: Block[],
-    setBlocks: (blocks: Block[]) => void
-) {
-    /**
-     * Updates a block by ID using a mapper function
-     * This is a reusable helper to avoid repetitive map operations
-     */
-    const updateBlock = (blockId: string, updater: (block: Block) => Block) => {
-        setBlocks(blocks.map((block) => block.id === blockId ? updater(block) : block));
-    };
+type SetBlocks = (next: Block[] | ((current: Block[]) => Block[])) => void;
 
-    /**
-     * Deletes a block by ID with validation
-     */
-    const deleteBlock = (blockId: string): boolean => {
-        const blockExists = blocks.some((b) => b.id === blockId);
-        if (!blockExists) {
-            console.warn(`[deleteBlock] Block ${blockId} not found`);
-            return false;
+interface BlockOperationsOptions {
+    blocks: Block[];
+    blockMap: SyncedMap<Block>;
+    setLegacyBlocks: SetBlocks;
+    useBlockMap: boolean;
+}
+
+/**
+ * Manages block mutations while supporting the legacy array during migration.
+ * Once migration completes, each block is independently synchronized through
+ * Figma's SyncedMap so edits to different blocks can merge in multiplayer.
+ */
+export function createBlockOperations({
+    blocks,
+    blockMap,
+    setLegacyBlocks,
+    useBlockMap,
+}: BlockOperationsOptions) {
+    const updateBlock = (blockId: string, updater: (block: Block) => Block): boolean => {
+        if (useBlockMap) {
+            const block = blockMap.get(blockId);
+            if (!block) return false;
+
+            blockMap.set(blockId, updater(block));
+            return true;
         }
-        setBlocks(blocks.filter((b) => b.id !== blockId));
+
+        if (!blocks.some((block) => block.id === blockId)) return false;
+
+        setLegacyBlocks((currentBlocks) => currentBlocks.map((block) => (
+            block.id === blockId ? updater(block) : block
+        )));
         return true;
     };
 
-    /**
-     * Adds a new block of the specified type
-     */
-    const addBlock = (type: BlockType): string => {
-        const blockId = generateId();
-        const newBlock: Block = {
-            id: blockId,
-            type,
-            content: '',
-            ...(type === 'text' && {
-                format: 'B1',
-                listType: 'none',
-                lines: [{ id: generateId(), text: '', format: 'B1' }]
-            }),
-            ...(type === 'todo' && {
-                todos: [{ id: generateId(), text: '', completed: false }]
-            }),
-        };
+    const deleteBlock = (blockId: string): boolean => {
+        if (useBlockMap) {
+            if (!blockMap.has(blockId)) return false;
+            blockMap.delete(blockId);
+            return true;
+        }
 
-        setBlocks([...blocks, newBlock]);
-        return blockId;
+        if (!blocks.some((block) => block.id === blockId)) return false;
+
+        setLegacyBlocks((currentBlocks) => currentBlocks.filter((block) => block.id !== blockId));
+        return true;
     };
 
-    /**
-     * Adds a line to a text/code block
-     */
-    const addLineToBlock = (blockId: string, afterLineId?: string) => {
-        updateBlock(blockId, (block) => {
-            if (block.type !== 'text' && block.type !== 'code') return block;
+    const addBlock = (type: BlockType): string => {
+        const newBlock = createBlock(type);
 
-            const lines = block.lines || [{ id: generateId(), text: block.content || '', format: block.format || 'B1' }];
+        if (useBlockMap) {
+            blockMap.set(newBlock.id, newBlock);
+        } else {
+            setLegacyBlocks((currentBlocks) => [...currentBlocks, newBlock]);
+        }
+
+        return newBlock.id;
+    };
+
+    const addLineToBlock = (blockId: string, afterLineId: string) => {
+        updateBlock(blockId, (block) => {
+            if (block.type !== 'text') return block;
+
+            const lines = getTextLines(block);
+            const index = lines.findIndex((line) => line.id === afterLineId);
+            if (index === -1) return block;
+
             const newLine: TextLine = {
                 id: generateId(),
                 text: '',
-                format: lines[lines.length - 1]?.format || 'B1',
+                format: lines[index].format,
             };
 
-            if (afterLineId) {
-                const index = lines.findIndex(l => l.id === afterLineId);
-                if (index === -1) return block; // Validation
-
-                const newLines = [
+            return {
+                ...block,
+                lines: [
                     ...lines.slice(0, index + 1),
                     newLine,
                     ...lines.slice(index + 1),
-                ];
-                return { ...block, lines: newLines };
-            }
-
-            return { ...block, lines: [...lines, newLine] };
+                ],
+            };
         });
     };
 
-    /**
-     * Updates a line in a text/code block
-     */
     const updateLineInBlock = (blockId: string, lineId: string, text: string) => {
         updateBlock(blockId, (block) => {
-            if (block.type !== 'text' && block.type !== 'code') return block;
+            if (block.type !== 'text') return block;
 
-            const lines = block.lines || [];
             return {
                 ...block,
-                lines: lines.map(l => l.id === lineId ? { ...l, text } : l)
+                lines: getTextLines(block).map((line) => (
+                    line.id === lineId ? { ...line, text } : line
+                )),
             };
         });
     };
 
-    /**
-     * Updates line format in a text/code block
-     */
     const updateLineFormat = (blockId: string, lineId: string, format: TextFormat) => {
         updateBlock(blockId, (block) => {
-            if (block.type !== 'text' && block.type !== 'code') return block;
+            if (block.type !== 'text') return block;
 
             return {
                 ...block,
-                lines: (block.lines || []).map(l => l.id === lineId ? { ...l, format } : l)
+                lines: getTextLines(block).map((line) => (
+                    line.id === lineId ? { ...line, format } : line
+                )),
             };
         });
     };
 
-    /**
-     * Deletes a line from a text/code block
-     */
+    const updateBlockFormat = (blockId: string, format: TextFormat) => {
+        updateBlock(blockId, (block) => {
+            if (block.type !== 'text') return block;
+
+            return {
+                ...block,
+                format,
+                lines: getTextLines(block).map((line) => ({ ...line, format })),
+            };
+        });
+    };
+
     const deleteLineFromBlock = (blockId: string, lineId: string) => {
         updateBlock(blockId, (block) => {
-            if (block.type !== 'text' && block.type !== 'code') return block;
+            if (block.type !== 'text') return block;
 
-            const lines = (block.lines || []).filter(l => l.id !== lineId);
-            // Keep at least one empty line
+            const lines = getTextLines(block).filter((line) => line.id !== lineId);
             return {
                 ...block,
-                lines: lines.length === 0 ? [{ id: generateId(), text: '', format: 'B1' }] : lines
+                lines: lines.length > 0
+                    ? lines
+                    : [{ id: generateId(), text: '', format: 'B1' }],
             };
         });
     };
 
-    /**
-     * Updates block content
-     */
     const updateBlockContent = (blockId: string, content: string) => {
         updateBlock(blockId, (block) => ({ ...block, content }));
     };
 
-    /**
-     * Updates block format
-     */
-    const updateBlockFormat = (blockId: string, format: TextFormat) => {
-        updateBlock(blockId, (block) => ({ ...block, format }));
-    };
-
-    /**
-     * Updates block list type
-     */
     const updateBlockListType = (blockId: string, listType: ListType) => {
-        updateBlock(blockId, (block) => ({ ...block, listType }));
+        updateBlock(blockId, (block) => (
+            block.type === 'text' ? { ...block, listType } : block
+        ));
     };
 
-    /**
-     * Adds a todo item to a todo block
-     */
     const addTodoItem = (blockId: string) => {
         updateBlock(blockId, (block) => {
             if (block.type !== 'todo') return block;
@@ -174,129 +160,64 @@ export function createBlockOperations(
                 text: '',
                 completed: false,
             };
+
             return { ...block, todos: [...(block.todos || []), newTodo] };
         });
     };
 
-    /**
-     * Updates a todo item
-     */
     const updateTodoItem = (blockId: string, todoId: string, text: string) => {
         updateBlock(blockId, (block) => {
             if (block.type !== 'todo') return block;
 
             return {
                 ...block,
-                todos: (block.todos || []).map((t) => t.id === todoId ? { ...t, text } : t)
+                todos: (block.todos || []).map((todo) => (
+                    todo.id === todoId ? { ...todo, text } : todo
+                )),
             };
         });
     };
 
-    /**
-     * Toggles todo completion status
-     */
     const toggleTodoCompletion = (blockId: string, todoId: string) => {
         updateBlock(blockId, (block) => {
             if (block.type !== 'todo') return block;
 
             return {
                 ...block,
-                todos: (block.todos || []).map((t) => t.id === todoId ? { ...t, completed: !t.completed } : t)
+                todos: (block.todos || []).map((todo) => (
+                    todo.id === todoId ? { ...todo, completed: !todo.completed } : todo
+                )),
             };
         });
     };
 
-    /**
-     * Deletes a todo item
-     */
     const deleteTodoItem = (blockId: string, todoId: string) => {
         updateBlock(blockId, (block) => {
             if (block.type !== 'todo') return block;
 
-            const todos = (block.todos || []).filter(t => t.id !== todoId);
-            // Keep at least one empty todo
+            const todos = (block.todos || []).filter((todo) => todo.id !== todoId);
             return {
                 ...block,
-                todos: todos.length === 0 ? [{ id: generateId(), text: '', completed: false }] : todos
-            };
-        });
-    };
-
-    /**
-     * Inserts a block after a specific block
-     */
-    const insertBlockAfter = (blockId: string): boolean => {
-        const blockIndex = blocks.findIndex((b) => b.id === blockId);
-        if (blockIndex === -1) {
-            console.warn(`[insertBlockAfter] Block ${blockId} not found`);
-            return false;
-        }
-
-        const newBlock: Block = {
-            id: generateId(),
-            type: 'text',
-            content: '',
-            format: 'B1',
-            listType: 'none',
-            lines: [{ id: generateId(), text: '', format: 'B1' }],
-        };
-
-        const newBlocks = [
-            ...blocks.slice(0, blockIndex + 1),
-            newBlock,
-            ...blocks.slice(blockIndex + 1),
-        ];
-        setBlocks(newBlocks);
-        return true;
-    };
-
-    /**
-     * Inserts a todo item after a specific todo
-     */
-    const insertTodoAfter = (blockId: string, todoId: string) => {
-        updateBlock(blockId, (block) => {
-            if (block.type !== 'todo') return block;
-
-            const todos = block.todos || [];
-            const todoIndex = todos.findIndex((t) => t.id === todoId);
-            if (todoIndex === -1) {
-                console.warn(`[insertTodoAfter] Todo ${todoId} not found`);
-                return block;
-            }
-
-            const newTodo: TodoItem = {
-                id: generateId(),
-                text: '',
-                completed: false,
-            };
-
-            return {
-                ...block,
-                todos: [
-                    ...todos.slice(0, todoIndex + 1),
-                    newTodo,
-                    ...todos.slice(todoIndex + 1),
-                ]
+                todos: todos.length > 0
+                    ? todos
+                    : [{ id: generateId(), text: '', completed: false }],
             };
         });
     };
 
     return {
-        updateBlock,
         deleteBlock,
         addBlock,
         addLineToBlock,
         updateLineInBlock,
         updateLineFormat,
+        updateBlockFormat,
         deleteLineFromBlock,
         updateBlockContent,
-        updateBlockFormat,
         updateBlockListType,
         addTodoItem,
         updateTodoItem,
         toggleTodoCompletion,
         deleteTodoItem,
-        insertBlockAfter,
-        insertTodoAfter,
     };
 }

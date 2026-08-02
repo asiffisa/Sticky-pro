@@ -20,6 +20,8 @@ export interface Block {
     id: string;
     type: BlockType;
     content: string;
+    /** Stable ordering key used by the synced block map. */
+    order?: string;
     format?: TextFormat;
     listType?: ListType;
     lines?: TextLine[];
