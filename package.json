@@ -1,26 +1,28 @@
 {
   "name": "Sticky Pro",
   "version": "1.0.0",
-  "description": "Your Figma widget",
+  "description": "A collaborative Figma and FigJam widget for structured notes, to-dos, and code snippets.",
   "scripts": {
     "build": "esbuild code.tsx --bundle --outfile=dist/code.js --target=es6 --sourcemap",
-    "build:prod": "esbuild code.tsx --bundle --outfile=dist/code.js --target=es6 --minify",
-    "lint": "eslint --ext .ts,.tsx --ignore-pattern node_modules .",
-    "lint:fix": "eslint --ext .ts,.tsx --ignore-pattern node_modules --fix .",
+    "build:prod": "esbuild code.tsx --bundle --outfile=dist/code.js --target=es6 --minify && rm -f dist/code.js.map",
+    "lint": "eslint --ext .ts,.tsx --ignore-pattern node_modules --ignore-pattern tests .",
+    "lint:fix": "eslint --ext .ts,.tsx --ignore-pattern node_modules --ignore-pattern tests --fix .",
     "tsc": "tsc --noEmit",
+    "test": "vitest run",
     "watch": "npm run build -- --watch"
   },
   "author": "Asif Ali",
   "license": "MIT",
   "devDependencies": {
-    "@figma/eslint-plugin-figma-plugins": "*",
-    "@figma/plugin-typings": "*",
-    "@figma/widget-typings": "^1.12.1",
-    "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0",
-    "esbuild": "*",
-    "eslint": "^8.54.0",
-    "typescript": "^5.3.2"
+    "@figma/eslint-plugin-figma-plugins": "1.0.0",
+    "@figma/plugin-typings": "1.132.0",
+    "@figma/widget-typings": "1.12.1",
+    "@typescript-eslint/eslint-plugin": "8.65.0",
+    "@typescript-eslint/parser": "8.65.0",
+    "esbuild": "0.28.1",
+    "eslint": "8.57.1",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
   },
   "eslintConfig": {
     "extends": [
@@ -30,7 +32,7 @@
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-      "project": "./widget-src/tsconfig.json"
+      "project": "./tsconfig.json"
     },
     "root": true,
     "rules": {
@@ -43,5 +45,8 @@
         }
       ]
     }
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

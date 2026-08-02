@@ -73,6 +73,7 @@ export function TodoItem({
                 <Input
                     value={todo.text}
                     placeholder={`To do`}
+                    onClick={() => onFocus?.({ todoId: todo.id })}
                     onTextEditEnd={(e) => onUpdate(e.characters)}
                     fontSize={14}
                     fontFamily="Inter"
@@ -83,6 +84,7 @@ export function TodoItem({
                     inputFrameProps={{
                         fill: '#00000000',
                         padding: 0,
+                        onClick: () => onFocus?.({ todoId: todo.id }),
                     }}
                 />
             </AutoLayout>

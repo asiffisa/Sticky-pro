@@ -19,24 +19,20 @@ import type { Block } from '../types';
  * @param isFocused - Whether this block is currently focused
  * @param theme - Current theme
  * @param onFocus - Callback when block or todo gains focus
- * @param onBlur - Callback when block loses focus
  * @param onDelete - Callback to delete the block
  * @param onAddTodo - Callback to add a new todo item
  * @param onUpdateTodo - Callback to update a todo item
  * @param onToggleTodo - Callback to toggle todo completion
- * @param onInsertTodoAfter - Callback to insert todo after another
  */
 export function TodoBlock({
     block,
     width,
     isFirst,
     onFocus,
-    onBlur,
     onDelete,
     onAddTodo,
     onUpdateTodo,
     onToggleTodo,
-    onInsertTodoAfter,
     isFocused,
     theme,
 }: {
@@ -46,12 +42,10 @@ export function TodoBlock({
     isFocused: boolean;
     theme: 'dark' | 'light';
     onFocus: (opts?: { lineId?: string; todoId?: string }) => void;
-    onBlur: () => void;
     onDelete: () => void;
     onAddTodo: () => void;
     onUpdateTodo: (todoId: string, text: string) => void;
     onToggleTodo: (todoId: string) => void;
-    onInsertTodoAfter?: (todoId: string) => void;
 }) {
     const colors = themeColors[theme];
     const todos = block.todos || [];

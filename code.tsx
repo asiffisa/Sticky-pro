@@ -1,5 +1,5 @@
 const { widget } = figma;
-const { useSyncedState, usePropertyMenu, AutoLayout, Text, SVG } = widget;
+const { useSyncedState, useSyncedMap, useEffect, usePropertyMenu, AutoLayout, Text, SVG } = widget;
 
 // Import types
 import type { BlockType, Block } from './types';
@@ -13,6 +13,7 @@ import {
 
 // Import utilities
 import { createPropertyMenu, handlePropertyMenuAction } from './utils/propertyMenu';
+import { normalizeBlock, sortBlocks } from './utils/blockData';
 
 // Import hooks
 import { createBlockOperations } from './hooks/useBlockOperations';
@@ -44,7 +45,7 @@ function StickyProWidget() {
   const [mainHeading, setMainHeading] = useSyncedState<string>('mainHeading', '');
 
   /** Array of all blocks in the widget */
-  const [blocks, setBlocks] = useSyncedState<Block[]>('blocks', [
+  const [legacyBlocks, setLegacyBlocks] = useSyncedState<Block[]>('blocks', [
     {
       id: 'initial-block',
       type: 'text',
@@ -54,6 +55,9 @@ function StickyProWidget() {
       lines: [{ id: 'initial-line', text: '', format: 'B1' }],
     },
   ]);
+
+  const blockMap = useSyncedMap<Block>('blocks-v2');
+  const [blocksMigrated, setBlocksMigrated] = useSyncedState<boolean>('blocks-v2-migrated', false);
 
   /** Widget width - either 360px (narrow) or 480px (wide) */
   const [width, setWidth] = useSyncedState<360 | 480>('width', 360);
@@ -75,21 +79,36 @@ function StickyProWidget() {
 
   // ==================== Derived State ====================
 
+  useEffect(() => {
+    if (blocksMigrated) return;
+
+    legacyBlocks.forEach((block, index) => {
+      const normalizedBlock = normalizeBlock(block, index);
+      blockMap.set(normalizedBlock.id, normalizedBlock);
+    });
+    setBlocksMigrated(true);
+  });
+
+  const blocks = blocksMigrated ? sortBlocks(blockMap.values()) : legacyBlocks;
+
   /** The currently focused block object, or undefined if no block is focused */
   const focusedBlock = blocks.find((b) => b.id === focusedBlockId);
 
   // ==================== Custom Hooks ====================
 
   /** Block operations hook - provides all block manipulation functions */
-  const blockOps = createBlockOperations(blocks, setBlocks);
+  const blockOps = createBlockOperations({
+    blocks,
+    blockMap,
+    setLegacyBlocks,
+    useBlockMap: blocksMigrated,
+  });
 
   /** Focus management hook - provides focus state management functions */
   const focusOps = createFocusManagement(
     focusedBlockId,
     setFocusedBlockId,
-    focusedLineId,
     setFocusedLineId,
-    focusedTodoId,
     setFocusedTodoId
   );
 
@@ -99,7 +118,7 @@ function StickyProWidget() {
    * Toggles the widget width between narrow (360px) and wide (480px)
    */
   const toggleWidth = () => {
-    setWidth(width === 360 ? 480 : 360);
+    setWidth((currentWidth) => currentWidth === 360 ? 480 : 360);
   };
 
   /**
@@ -112,12 +131,33 @@ function StickyProWidget() {
   };
 
   /**
+   * Input nodes can consume a click before their parent AutoLayout sees it.
+   * Route every editor click through one handler so the native property menu
+   * always receives the block type that the user is actually editing.
+   */
+  const handleBlockFocus = (blockId: string, opts?: { lineId?: string; todoId?: string }) => {
+    if (showAddBlockToolbar) setShowAddBlockToolbar(false);
+    focusOps.focusBlock(blockId, opts);
+  };
+
+  const handleHeadingFocus = () => {
+    if (showAddBlockToolbar) setShowAddBlockToolbar(false);
+    focusOps.clearFocus();
+  };
+
+  const toggleAddBlockToolbar = () => {
+    const willOpen = !showAddBlockToolbar;
+    if (willOpen) focusOps.clearFocus();
+    setShowAddBlockToolbar(willOpen);
+  };
+
+  /**
    * Adds a new block of the specified type and sets focus to it
    * @param type - Type of block to add ('text', 'code', or 'todo')
    */
   const handleAddBlock = (type: BlockType) => {
     const blockId = blockOps.addBlock(type);
-    setFocusedBlockId(blockId);
+    focusOps.focusBlock(blockId);
     setShowAddBlockToolbar(false);
   };
 
@@ -131,6 +171,7 @@ function StickyProWidget() {
   usePropertyMenu(
     createPropertyMenu(focusedBlockId, focusedBlock, theme, width),
     ({ propertyName }) => {
+      if (showAddBlockToolbar) setShowAddBlockToolbar(false);
       handlePropertyMenuAction(
         propertyName,
         focusedBlockId,
@@ -181,7 +222,7 @@ function StickyProWidget() {
           onChange={setMainHeading}
           width={width - 40}
           theme={theme}
-          onFocus={() => focusOps.clearFocus()}
+          onFocus={handleHeadingFocus}
         />
 
         {/* Blocks */}
@@ -193,19 +234,14 @@ function StickyProWidget() {
             isFirst={index === 0}
             isFocused={focusedBlockId === block.id}
             theme={theme}
-            onFocus={(opts?: { lineId?: string; todoId?: string }) => focusOps.focusBlock(block.id, opts)}
-            onBlur={() => focusOps.clearFocus()}
+            onFocus={(opts?: { lineId?: string; todoId?: string }) => handleBlockFocus(block.id, opts)}
             onDelete={() => handleDeleteBlock(block.id)}
             onContentChange={(content) => blockOps.updateBlockContent(block.id, content)}
-            onInsertAfter={() => blockOps.insertBlockAfter(block.id)}
             onAddLine={(afterLineId) => blockOps.addLineToBlock(block.id, afterLineId)}
             onUpdateLine={(lineId, text) => blockOps.updateLineInBlock(block.id, lineId, text)}
-            onUpdateLineFormat={(lineId, format) => blockOps.updateLineFormat(block.id, lineId, format)}
-            onDeleteLine={(lineId) => blockOps.deleteLineFromBlock(block.id, lineId)}
             onAddTodo={() => blockOps.addTodoItem(block.id)}
             onUpdateTodo={(todoId, text) => blockOps.updateTodoItem(block.id, todoId, text)}
             onToggleTodo={(todoId) => blockOps.toggleTodoCompletion(block.id, todoId)}
-            onInsertTodoAfter={(todoId) => blockOps.insertTodoAfter(block.id, todoId)}
           />
         ))}
 
@@ -216,7 +252,7 @@ function StickyProWidget() {
           padding={{ top: 12, bottom: 0, left: 0, right: 0 }}
           width="hug-contents"
           verticalAlignItems="center"
-          onClick={() => setShowAddBlockToolbar(!showAddBlockToolbar)}
+          onClick={toggleAddBlockToolbar}
         >
           {showAddBlockToolbar ? (
             <>

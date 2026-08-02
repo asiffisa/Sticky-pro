@@ -4,9 +4,9 @@ const { AutoLayout, Input, Text, SVG } = widget;
 import { CloseButton } from './CloseButton';
 import { themeColors } from '../constants/theme';
 import { getPlusIcon } from '../constants/icons';
-import { generateId } from '../utils/helpers';
+import { getTextLines } from '../utils/blockData';
 import { getTextFormat } from '../utils/textFormat';
-import type { Block, TextFormat } from '../types';
+import type { Block } from '../types';
 
 /**
  * Text Block Component
@@ -22,14 +22,10 @@ import type { Block, TextFormat } from '../types';
  * @param isFirst - Whether this is the first block
  * @param theme - Current theme
  * @param onFocus - Callback when block or line gains focus
- * @param onBlur - Callback when block loses focus
  * @param onDelete - Callback to delete the block
  * @param onContentChange - Callback when content changes (code blocks)
- * @param onInsertAfter - Callback to insert block after this one
  * @param onAddLine - Callback to add a new line
  * @param onUpdateLine - Callback to update a line
- * @param onUpdateLineFormat - Callback to update line format
- * @param onDeleteLine - Callback to delete a line
  */
 export function TextBlock({
     block,
@@ -37,28 +33,20 @@ export function TextBlock({
     isFirst,
     theme,
     onFocus,
-    onBlur,
     onDelete,
     onContentChange,
-    onInsertAfter,
     onAddLine,
     onUpdateLine,
-    onUpdateLineFormat,
-    onDeleteLine,
 }: {
     block: Block;
     width: number;
     isFirst: boolean;
     theme: 'dark' | 'light';
     onFocus: (opts?: { lineId?: string; todoId?: string }) => void;
-    onBlur: () => void;
     onDelete: () => void;
     onContentChange: (content: string) => void;
-    onInsertAfter?: () => void;
     onAddLine?: (afterLineId: string) => void;
     onUpdateLine?: (lineId: string, text: string) => void;
-    onUpdateLineFormat?: (lineId: string, format: TextFormat) => void;
-    onDeleteLine?: (lineId: string) => void;
 }) {
     const colors = themeColors[theme];
 
@@ -116,6 +104,7 @@ export function TextBlock({
                                 inputFrameProps={{
                                     fill: '#00000000',
                                     padding: 0,
+                                    onClick: () => onFocus(),
                                 }}
                             />
                         </AutoLayout>
@@ -129,7 +118,7 @@ export function TextBlock({
     }
 
     // Text blocks use existing line-based approach
-    const lines = block.lines || [{ id: generateId(), text: block.content || '', format: block.format || 'B1' }];
+    const lines = getTextLines(block);
     return (
         <AutoLayout
             direction="horizontal"
@@ -197,15 +186,17 @@ export function TextBlock({
                                         inputBehavior="multiline"
                                         placeholder={"Type"}
                                         value={line.text}
+                                        onClick={() => onFocus({ lineId: line.id })}
                                         onTextEditEnd={(e) => onUpdateLine && onUpdateLine(line.id, e.characters)}
                                         fontSize={fontSize}
-                                        fontFamily={block.type === 'code' ? "Source Code Pro" : "Inter"}
+                                        fontFamily="Inter"
                                         fontWeight={fontWeight as 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900}
                                         fill={colors.textPrimary}
                                         width="fill-parent"
                                         inputFrameProps={{
                                             fill: '#00000000',
                                             padding: 0,
+                                            onClick: () => onFocus({ lineId: line.id }),
                                         }}
                                     />
                                 </AutoLayout>
