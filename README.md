@@ -1,10 +1,12 @@
 # Sticky Pro
 
-[![Figma Widget](https://img.shields.io/badge/Figma-Widget-F24E1E?logo=figma&logoColor=white)](https://developers.figma.com/docs/widgets/)
+[![Figma Widget](https://img.shields.io/badge/Figma-Widget-F24E1E?logo=figma&logoColor=white)](https://developers.figma.com/docs/widgets/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Sticky Pro is a lightweight Figma and FigJam widget for structured notes, to-do lists, and code snippets.
 
 ![Sticky Pro cover](assets/Sticky%20pro%20cover.jpeg)
+
+[Try it in Figma](https://www.figma.com/community/widget/1575988033250798795) · [Report an issue](https://github.com/asiffisa/Sticky-pro/issues)
 
 ## Built for shared work
 
@@ -12,10 +14,10 @@ Each content block is stored independently. This keeps collaborative edits safer
 
 ## Create in one place
 
-- Rich text with heading, body, caption, bullet, and numbered-list formatting
-- Interactive to-do lists
-- Code blocks for snippets and prompts
-- Dark and light themes, plus narrow and wide layouts
+- ✍️ Rich text with heading, body, caption, bullet, and numbered-list formatting
+- ✅ Interactive to-do lists
+- 💻 Code blocks for snippets and prompts
+- 🎨 Dark and light themes, plus narrow and wide layouts
 
 ## Get started
 
