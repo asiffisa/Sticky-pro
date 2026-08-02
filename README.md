@@ -10,12 +10,12 @@ Sticky Pro is a lightweight Figma and FigJam widget for structured notes, to-do 
 
 Each content block is stored independently. This keeps collaborative edits safer: when two people edit different blocks, one update does not overwrite the other.
 
-## Create in one place
+## 🧰 Create in one place
 
-- Rich text with heading, body, caption, bullet, and numbered-list formatting
-- Interactive to-do lists
-- Code blocks for snippets and prompts
-- Dark and light themes, plus narrow and wide layouts
+- ✍️ Rich text with heading, body, caption, bullet, and numbered-list formatting
+- ✅ Interactive to-do lists
+- 💻 Code blocks for snippets and prompts
+- 🎨 Dark and light themes, plus narrow and wide layouts
 
 ## Get started
 
